@@ -10,8 +10,10 @@ PyYAML
 scipy
 tqdm
 pillow
+thop
 scikit-image
 git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI
+pycocotools
 
 
 # -------------------------------------------------------------- #
