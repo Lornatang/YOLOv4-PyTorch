@@ -16,9 +16,9 @@ import numpy as np
 import torch
 import torchvision.models as models
 
-from .utils import scale_coords
-from .utils import xywh2xyxy
-from .utils import xyxy2xywh
+from ..utils.coords import scale_coords
+from ..utils.coords import xywh2xyxy
+from ..utils.coords import xyxy2xywh
 
 
 def apply_classifier(x, model, image, raw_image):
@@ -42,12 +42,12 @@ def apply_classifier(x, model, image, raw_image):
             images = []
             for j, a in enumerate(d):  # per item
                 cutout = raw_image[i][int(a[1]):int(a[3]), int(a[0]):int(a[2])]
-                new_image = cv2.resize(cutout, (224, 224))  # BGR
+                image = cv2.resize(cutout, (224, 224))  # BGR
 
-                new_image = new_image[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
-                new_image = np.ascontiguousarray(new_image, dtype=np.float32)  # uint8 to float32
-                new_image /= 255.0  # 0 - 255 to 0.0 - 1.0
-                images.append(new_image)
+                image = image[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
+                image = np.ascontiguousarray(image, dtype=np.float32)  # uint8 to float32
+                image /= 255.0  # 0 - 255 to 0.0 - 1.0
+                images.append(image)
 
             pred_cls2 = model(torch.Tensor(images).to(d.device)).argmax(1)  # classifier prediction
             x[i] = x[i][pred_cls1 == pred_cls2]  # retain matching class detections
