@@ -135,14 +135,15 @@ runs/
 results.txt
 train_batch_*.png
 test_batch_*.png
+labels.png
 
 # Custom dataset dir
-data/masked
+data/masked/
 data/masked.yaml
 
 
 # Custom model file
-configs/masked/
+configs/MASKED-Detection/
 
 *.pth
 
