@@ -54,19 +54,18 @@ def detect(save_image=False):
     os.makedirs(out)  # make new output folder
 
     # Initialize model
-    model = YOLO(args.config_file, image_size)
+    model = YOLO(args.config_file).to(device)
 
     # Load weight
     model.load_state_dict(torch.load(weights, map_location=device)["state_dict"])
-    model.to(device).eval()
+    model.eval()
 
     # Second-stage classifier
     classify = False
     model_classify = None
     if classify:
         model_classify = load_classifier(name="resnet101", classes=2)  # initialize
-        model_classify.load_state_dict(
-            torch.load("weights/resnet101.pth", map_location=device)["model"])  # load weights
+        model_classify.load_state_dict(torch.load("weights/resnet101.pth", map_location=device))
         model_classify.to(device).eval()
 
     # Half precision
