@@ -281,7 +281,7 @@ class LoadImagesAndLabels(Dataset):
                         b[[1, 3]] = np.clip(b[[1, 3]], 0, h)
                         assert cv2.imwrite(f, img[b[1]:b[3], b[0]:b[2]]), 'Failure extracting classifier boxes'
             else:
-                ne += 1  # print('empty labels for image %s' % self.img_files[i])  # file empty
+                ne += 1  # print(f'empty labels for image {self.image_files[i]}')  # file empty
 
             process_bar.desc = 'Caching labels %s (%g found, %g missing, %g empty, %g duplicate, for %g images)' % (
                 s, nf, nm, ne, nd, image_files_num)
