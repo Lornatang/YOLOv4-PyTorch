@@ -36,6 +36,7 @@ wget -c http://images.cocodataset.org/zips/val2014.zip
 unzip -q train2014.zip
 unzip -q val2014.zip
 
+# shellcheck disable=SC2103
 cd ..
 
 # Download COCO Metadata
