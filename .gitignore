@@ -132,6 +132,7 @@ dmypy.json
 
 # Program run temp file
 runs/
+outputs/
 results.txt
 train_batch_*.png
 test_batch_*.png

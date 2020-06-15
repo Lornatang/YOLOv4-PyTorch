@@ -184,8 +184,8 @@ if __name__ == "__main__":
                         help="Model file weight path. (default: `weights/yolov5s.pth`)")
     parser.add_argument("--source", type=str, default="data/examples",
                         help="Image input source. (default: `data/examples`)")
-    parser.add_argument("--output", type=str, default="output",
-                        help="Output result folder. (default: `output`)")
+    parser.add_argument("--output", type=str, default="outputs",
+                        help="Output result folder. (default: `outputs`)")
     parser.add_argument("--image-size", type=int, default=640,
                         help="Size of processing picture. (default: 640)")
     parser.add_argument("--confidence-threshold", type=float, default=0.4,

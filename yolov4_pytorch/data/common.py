@@ -30,7 +30,7 @@ def check_image_size(image_size, s=32):
     return make_divisible(image_size, s)  # nearest gs-multiple
 
 
-def create_folder(path="./output"):
+def create_folder(path="./outputs"):
     # Create folder
     if os.path.exists(path):
         shutil.rmtree(path)  # delete output folder

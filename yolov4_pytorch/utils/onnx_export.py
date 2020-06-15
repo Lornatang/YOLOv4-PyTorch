@@ -28,7 +28,7 @@ if __name__ == '__main__':
     print(opt)
 
     # Parameters
-    f = opt.weights.replace('.pt', '.onnx')  # onnx filename
+    f = opt.weights.replace('.pth', '.onnx')  # onnx filename
     image = torch.zeros((opt.batch_size, 3, *opt.img_size))  # image size, (1, 3, 320, 192) iDetection
 
     # Load PyTorch model
