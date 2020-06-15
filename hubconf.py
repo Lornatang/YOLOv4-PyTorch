@@ -17,7 +17,7 @@
 
 import torch
 
-from yolov4.models import Model
+from yolov4_pytorch.model import YOLO
 
 dependencies = ['torch', 'yaml']
 
@@ -34,10 +34,9 @@ def create(name, pretrained, channels, classes):
     Returns:
         pytorch model
     """
-    model = Model('models/%s.yaml' % name, channels, classes)
+    model = YOLO(f'configs/{name}.yaml', channels, classes)
     if pretrained:
-        ckpt = '%s.pth' % name  # checkpoint filename
-        state_dict = torch.load(ckpt)['model'].state_dict()
+        state_dict = torch.load(f'{name}.pth')['state_dict']
         state_dict = {k: v for k, v in state_dict.items() if model.state_dict()[k].numel() == v.numel()}  # filter
         model.load_state_dict(state_dict, strict=False)  # load
     return model
