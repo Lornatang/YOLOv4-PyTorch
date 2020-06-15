@@ -73,24 +73,24 @@ class Detect(nn.Module):
         return torch.stack((xv, yv), 2).view((1, 1, ny, nx, 2)).float()
 
 
-class Model(nn.Module):
-    def __init__(self, model_cfg='yolov5s.yaml', ch=3, nc=None):  # model, input channels, number of classes
-        super(Model, self).__init__()
-        if type(model_cfg) is dict:
-            self.md = model_cfg  # model dict
+class YOLO(nn.Module):
+    def __init__(self, config_file='yolov5s.yaml', channels=3, classes=None):  # model, input channels, number of classes
+        super(YOLO, self).__init__()
+        if type(config_file) is dict:
+            self.config_file = config_file  # model dict
         else:  # is *.yaml
-            with open(model_cfg) as f:
-                self.md = yaml.load(f, Loader=yaml.FullLoader)  # model dict
+            with open(config_file) as f:
+                self.config_file = yaml.load(f, Loader=yaml.FullLoader)  # model dict
 
         # Define model
-        if nc:
-            self.md['nc'] = nc  # override yaml value
-        self.model, self.save = parse_model(self.md, ch=[ch])  # model, savelist, ch_out
+        if classes:
+            self.config_file['classes'] = classes  # override yaml value
+        self.model, self.save = parse_model(self.config_file, channels=[channels])  # model, savelist, ch_out
         # print([x.shape for x in self.forward(torch.zeros(1, ch, 64, 64))])
 
         # Build strides, anchors
         m = self.model[-1]  # Detect()
-        m.stride = torch.tensor([64 / x.shape[-2] for x in self.forward(torch.zeros(1, ch, 64, 64))])  # forward
+        m.stride = torch.tensor([64 / x.shape[-2] for x in self.forward(torch.zeros(1, channels, 64, 64))])  # forward
         m.anchors /= m.stride.view(-1, 1, 1)
         self.stride = m.stride
 
@@ -102,7 +102,7 @@ class Model(nn.Module):
 
     def forward(self, x, augment=False, profile=False):
         if augment:
-            img_size = x.shape[-2:]  # height, width
+            image_size = x.shape[-2:]  # height, width
             s = [0.83, 0.67]  # scales
             y = []
             for i, xi in enumerate((x,
@@ -113,7 +113,7 @@ class Model(nn.Module):
                 y.append(self.forward_once(xi)[0])
 
             y[1][..., :4] /= s[0]  # scale
-            y[1][..., 0] = img_size[1] - y[1][..., 0]  # flip lr
+            y[1][..., 0] = image_size[1] - y[1][..., 0]  # flip lr
             y[2][..., :4] /= s[1]  # scale
             return torch.cat(y, 1), None  # augmented inference, train
         else:
@@ -172,14 +172,14 @@ class Model(nn.Module):
         model_info(self)
 
 
-def parse_model(md, ch):  # model_dict, input_channels(3)
+def parse_model(model_dict, channels):
     print('\n%3s%15s%3s%10s  %-40s%-30s' % ('', 'from', 'n', 'params', 'module', 'arguments'))
-    anchors, nc, gd, gw = md['anchors'], md['nc'], md['depth_multiple'], md['width_multiple']
+    anchors, nc, gd, gw = model_dict['anchors'], model_dict['classes'], model_dict['depth_multiple'], model_dict['width_multiple']
     na = (len(anchors[0]) // 2)  # number of anchors
     no = na * (nc + 5)  # number of outputs = anchors * (classes + 5)
 
-    layers, save, c2 = [], [], ch[-1]  # layers, savelist, ch out
-    for i, (f, n, m, args) in enumerate(md['backbone'] + md['head']):  # from, number, module, args
+    layers, save, c2 = [], [], channels[-1]  # layers, savelist, ch out
+    for i, (f, n, m, args) in enumerate(model_dict['backbone'] + model_dict['head']):  # from, number, module, args
         m = eval(m) if isinstance(m, str) else m  # eval strings
         for j, a in enumerate(args):
             try:
@@ -189,7 +189,7 @@ def parse_model(md, ch):  # model_dict, input_channels(3)
 
         n = max(round(n * gd), 1) if n > 1 else n  # depth gain
         if m in [nn.Conv2d, Conv, Bottleneck, SPP, DWConv, MixConv2d, Focus, ConvPlus, BottleneckCSP]:
-            c1, c2 = ch[f], args[0]
+            c1, c2 = channels[f], args[0]
 
             # Normal
             # if i > 0 and args[0] != no:  # channel expansion factor
@@ -213,13 +213,13 @@ def parse_model(md, ch):  # model_dict, input_channels(3)
                 args.insert(2, n)
                 n = 1
         elif m is nn.BatchNorm2d:
-            args = [ch[f]]
+            args = [channels[f]]
         elif m is Concat:
-            c2 = sum([ch[-1 if x == -1 else x + 1] for x in f])
+            c2 = sum([channels[-1 if x == -1 else x + 1] for x in f])
         elif m is Detect:
-            f = f or list(reversed([(-1 if j == i else j - 1) for j, x in enumerate(ch) if x == no]))
+            f = f or list(reversed([(-1 if j == i else j - 1) for j, x in enumerate(channels) if x == no]))
         else:
-            c2 = ch[f]
+            c2 = channels[f]
 
         m_ = nn.Sequential(*[m(*args) for _ in range(n)]) if n > 1 else m(*args)  # module
         t = str(m)[8:-2].replace('__main__.', '')  # module type
@@ -228,5 +228,5 @@ def parse_model(md, ch):  # model_dict, input_channels(3)
         print('%3s%15s%3s%10.0f  %-40s%-30s' % (i, f, n, np, t, args))  # print
         save.extend(x % i for x in ([f] if isinstance(f, int) else f) if x != -1)  # append to savelist
         layers.append(m_)
-        ch.append(c2)
+        channels.append(c2)
     return nn.Sequential(*layers), sorted(save)

@@ -36,3 +36,11 @@ def model_info(model, verbose=False):
 
     print(f"Model Summary: {len(list(model.parameters()))} layers, "
           f"{parameter_num} parameters, {gradient_num} gradients{FLOPs}")
+
+
+def strip_optimizer(f='weights/best.pth'):  # from utils.utils import *; strip_optimizer()
+    # Strip optimizer from *.pt files for lighter files (reduced by 1/2 size)
+    x = torch.load(f, map_location=torch.device('cpu'))
+    x['optimizer'] = None
+    torch.save(x, f)
+    print('Optimizer stripped from %s' % f)

@@ -35,10 +35,10 @@ np.set_printoptions(linewidth=320, formatter={"float_kind": "{:11.5g}".format})
 cv2.setNumThreads(0)
 
 
-def plot_images(images, targets, paths=None, fname='images.png', names=None, max_size=640, max_subplots=16):
+def plot_images(images, targets, paths=None, filename='images.png', names=None, max_size=640, max_subplots=16):
     tl = 3  # line thickness
     tf = max(tl - 1, 1)  # font thickness
-    if os.path.isfile(fname):  # do not overwrite
+    if os.path.isfile(filename):  # do not overwrite
         return None
 
     if isinstance(images, torch.Tensor):
@@ -111,9 +111,9 @@ def plot_images(images, targets, paths=None, fname='images.png', names=None, max
         # Image border
         cv2.rectangle(mosaic, (block_x, block_y), (block_x + w, block_y + h), (255, 255, 255), thickness=3)
 
-    if fname is not None:
+    if filename is not None:
         mosaic = cv2.resize(mosaic, (int(ns * w * 0.5), int(ns * h * 0.5)), interpolation=cv2.INTER_AREA)
-        cv2.imwrite(fname, cv2.cvtColor(mosaic, cv2.COLOR_BGR2RGB))
+        cv2.imwrite(filename, cv2.cvtColor(mosaic, cv2.COLOR_BGR2RGB))
 
     return mosaic
 

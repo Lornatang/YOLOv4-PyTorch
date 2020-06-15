@@ -23,11 +23,11 @@ import numpy as np
 from ..utils.common import make_divisible
 
 
-def check_image_size(img_size, s=32):
+def check_image_size(image_size, s=32):
     # Verify img_size is a multiple of stride s
-    if img_size % s != 0:
-        print('WARNING: --img-size %g must be multiple of max stride %g' % (img_size, s))
-    return make_divisible(img_size, s)  # nearest gs-multiple
+    if image_size % s != 0:
+        print(f'WARNING: --img-size {image_size} must be multiple of max stride {s}')
+    return make_divisible(image_size, s)  # nearest gs-multiple
 
 
 def create_folder(path="./output"):

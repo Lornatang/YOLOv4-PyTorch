@@ -14,13 +14,61 @@
 from .classifier import apply_classifier
 from .classifier import load_classifier
 from .common import model_info
+from .common import strip_optimizer
 from .concat import Concat
 from .fuse import fuse_conv_and_bn
+from .module import Bottleneck
+from .module import BottleneckCSP
+from .module import Concat
+from .module import Conv
+from .module import ConvPlus
+from .module import DWConv
+from .module import Detect
+from .module import Flatten
+from .module import Focus
+from .module import GhostBottleneck
+from .module import GhostConv
+from .module import HardSwish
+from .module import MemoryEfficientMish
+from .module import MemoryEfficientSwish
+from .module import Mish
+from .module import MishImplementation
+from .module import MixConv2d
+from .module import SPP
+from .module import Sum
+from .module import Swish
+from .module import SwishImplementation
+from .module import YOLO
+from .module import parse_model
 
 __all__ = [
     "apply_classifier",
     "load_classifier",
     "model_info",
+    "strip_optimizer",
     "Concat",
     "fuse_conv_and_bn",
+    "HardSwish",
+    "MemoryEfficientMish",
+    "MemoryEfficientSwish",
+    "Mish",
+    "MishImplementation",
+    "Swish",
+    "SwishImplementation",
+    "Concat",
+    "Flatten",
+    "Focus",
+    "Sum",
+    "Conv",
+    "ConvPlus",
+    "DWConv",
+    "GhostConv",
+    "MixConv2d",
+    "SPP",
+    "Detect",
+    "YOLO",
+    "parse_model",
+    "Bottleneck",
+    "BottleneckCSP",
+    "GhostBottleneck"
 ]

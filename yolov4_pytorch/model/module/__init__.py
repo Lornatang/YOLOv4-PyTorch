@@ -29,7 +29,7 @@ from .conv import GhostConv
 from .conv import MixConv2d
 from .head import SPP
 from .layer import Detect
-from .layer import Model
+from .layer import YOLO
 from .layer import parse_model
 from .neck import Bottleneck
 from .neck import BottleneckCSP
@@ -54,7 +54,7 @@ __all__ = [
     "MixConv2d",
     "SPP",
     "Detect",
-    "Model",
+    "YOLO",
     "parse_model",
     "Bottleneck",
     "BottleneckCSP",
