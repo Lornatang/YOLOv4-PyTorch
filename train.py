@@ -29,7 +29,7 @@ import yaml
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from test import test
+from test import evaluate
 from yolov4_pytorch.data import LoadImagesAndLabels
 from yolov4_pytorch.data import check_image_size
 from yolov4_pytorch.model import YOLO
@@ -104,7 +104,7 @@ def train(parameters):
     classes = 1 if args.single_cls else int(data_dict["classes"])  # number of classes
 
     # Remove previous results
-    for old_file in glob.glob("*_batch*.jpg") + glob.glob("result.txt"):
+    for old_file in glob.glob("*_batch_*.png") + glob.glob("result.txt"):
         os.remove(old_file)
 
     # Create model
@@ -324,14 +324,14 @@ def train(parameters):
         ema.update_attr(model)
         final_epoch = epoch + 1 == epochs
         if not args.notest or final_epoch:  # Calculate mAP
-            results, maps, times = test(args.data,
-                                        batch_size=batch_size,
-                                        imgsz=image_size_test,
-                                        save_json=final_epoch and args.data.endswith(os.sep + "coco.yaml"),
-                                        model=ema.ema,
-                                        single_cls=args.single_cls,
-                                        dataloader=test_dataloader,
-                                        fast=ni < n_burn)
+            results, maps, times = evaluate(args.data,
+                                            batch_size=batch_size,
+                                            image_size=image_size_test,
+                                            save_json=final_epoch and args.data.endswith(os.sep + "coco.yaml"),
+                                            model=ema.ema,
+                                            single_cls=args.single_cls,
+                                            dataloader=test_dataloader,
+                                            fast=ni < n_burn)
 
         # Write
         with open(results_file, "a") as f:
