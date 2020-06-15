@@ -1,7 +1,7 @@
 # parameters
-nc: 80  # number of classes
-depth_multiple: 0.67  # model depth multiple
-width_multiple: 0.75  # layer channel multiple
+classes: 80  # number of classes
+depth_multiple: 1.0  # model depth multiple
+width_multiple: 1.0  # layer channel multiple
 
 # anchors
 anchors:
@@ -24,7 +24,8 @@ backbone:
    [-1, 6, BottleneckCSP, [1024]],  # 10
   ]
 
-# yolov5 head
+# yolov5l head
+# na = len(anchors[0])
 head:
   [[-1, 3, BottleneckCSP, [1024, False]],  # 11
    [-1, 1, nn.Conv2d, [na * (nc + 5), 1, 1]],  # 12 (P5/32-large)

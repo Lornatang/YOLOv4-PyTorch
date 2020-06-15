@@ -1,7 +1,0 @@
-train: data/masked/train.txt
-val: data/masked/val.txt
-test: data/masked/test.txt
-
-nc: 2
-
-names: ['Masking', 'UnMasking']
