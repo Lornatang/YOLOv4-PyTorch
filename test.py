@@ -26,6 +26,7 @@ from tqdm import tqdm
 
 from yolov4_pytorch.data import LoadImagesAndLabels
 from yolov4_pytorch.data import check_image_size
+from yolov4_pytorch.model import YOLO
 from yolov4_pytorch.model import model_info
 from yolov4_pytorch.utils import ap_per_class
 from yolov4_pytorch.utils import box_iou
@@ -42,7 +43,8 @@ from yolov4_pytorch.utils import xywh2xyxy
 from yolov4_pytorch.utils import xyxy2xywh
 
 
-def evaluate(data,
+def evaluate(config_file,
+             data,
              weights=None,
              batch_size=16,
              image_size=640,
@@ -63,8 +65,18 @@ def evaluate(data,
         for filename in glob.glob('test_batch_*.png'):
             os.remove(filename)
 
+        # Configure
+        with open(args.data) as data_file:
+            data_dict = yaml.load(data_file, Loader=yaml.FullLoader)  # model dict
+        classes = 1 if args.single_cls else int(data_dict["classes"])  # number of classes
+
+        # Create model
+        model = YOLO(config_file).to(device)
+        assert model.config_file[
+                   "classes"] == classes, f"{args.data} classes={classes} classes but {config_file} classes={config_file['classes']} classes "
+
         # Load model
-        model = torch.load(weights, map_location=device)['model']
+        model.load_state_dict(torch.load(weights, map_location=device)["state_dict"])
         model_info(model)
         # model.fuse()
         model.to(device)
@@ -82,7 +94,6 @@ def evaluate(data,
         data = yaml.load(filename, Loader=yaml.FullLoader)  # model dict
     nc = 1 if single_cls else int(data['classes'])  # number of classes
     iouv = torch.linspace(0.5, 0.95, 10).to(device)  # iou vector for mAP@0.5:0.95
-    # iouv = iouv[0].view(1)  # comment for mAP@0.5:0.95
     niou = iouv.numel()
 
     # Dataloader
@@ -148,10 +159,6 @@ def evaluate(data,
                 if nl:
                     stats.append((torch.zeros(0, niou, dtype=torch.bool), torch.Tensor(), torch.Tensor(), tcls))
                 continue
-
-            # Append to text file
-            # with open('test.txt', 'a') as file:
-            #    [file.write('%11.5g' * 7 % tuple(x) + '\n') for x in pred]
 
             # Clip boxes to image bounds
             clip_coords(pred, (height, width))
@@ -245,7 +252,8 @@ def evaluate(data,
             from pycocotools.cocoeval import COCOeval
 
             # https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocoEvalDemo.ipynb
-            cocoGt = COCO(glob.glob('data/coco/annotations/instances_val*.json')[0])  # initialize COCO ground truth api
+            cocoGt = COCO(
+                glob.glob('data/COCO-Detection/annotations/instances_val*.json')[0])  # initialize COCO ground truth api
             cocoDt = cocoGt.loadRes(filename)  # initialize COCO pred api
 
             cocoEval = COCOeval(cocoGt, cocoDt, 'bbox')
@@ -266,32 +274,45 @@ def evaluate(data,
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(prog='test.py')
-    parser.add_argument('--weights', type=str, default='weights/yolov5s.pth', help='model.pth path')
-    parser.add_argument('--data', type=str, default='data/coco.yaml', help='*.data path')
-    parser.add_argument('--batch-size', type=int, default=32, help='size of each image batch')
-    parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
-    parser.add_argument('--conf-thres', type=float, default=0.001, help='object confidence threshold')
-    parser.add_argument('--iou-thres', type=float, default=0.65, help='IOU threshold for NMS')
-    parser.add_argument('--save-json', action='store_true', help='save a cocoapi-compatible JSON results file')
-    parser.add_argument('--task', default='val', help="'val', 'test', 'study'")
-    parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
-    parser.add_argument('--single-cls', action='store_true', help='treat as single-class dataset')
-    parser.add_argument('--augment', action='store_true', help='augmented inference')
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config-file", type=str, default="configs/COCO-Detection/yolov5s.yaml",
+                        help="Neural network profile path. (default: `configs/COCO-Detection/yolov5s.yaml`)")
+    parser.add_argument("--data", type=str, default="data/coco2014.yaml",
+                        help="Path to dataset. (default: data/coco2014.yaml)")
+    parser.add_argument("--weights", type=str, default="weights/yolov5s.pth",
+                        help="Initial weights path. (default: `weights/yolov5s.pth`)")
+    parser.add_argument("--batch-size", type=int, default=32,
+                        help="Size of each image batch. (default=32)")
+    parser.add_argument("--workers", default=4, type=int, metavar="N",
+                        help="Number of data loading workers (default: 4)")
+    parser.add_argument("--image-size", type=int, default=640,
+                        help="Size of processing picture. (default=640)")
+    parser.add_argument("--confidence-threshold", type=float, default=0.001,
+                        help="Object confidence threshold. (default=0.001)")
+    parser.add_argument("--iou-threshold", type=float, default=0.65,
+                        help="IOU threshold for NMS. (default=0.65)")
+    parser.add_argument("--task", default="eval", help="`eval`, `study`, `test`")
+    parser.add_argument("--device", default="", help="device id (i.e. 0 or 0,1) or cpu")
+    parser.add_argument("--save-json", action="store_true",
+                        help="save a cocoapi-compatible JSON results file")
+    parser.add_argument("--single-cls", action="store_true", help="train as single-class dataset")
+    parser.add_argument("--augment", action="store_true", help="augmented for testing")
     parser.add_argument('--verbose', action='store_true', help='report mAP by class')
+
     args = parser.parse_args()
-    args.img_size = check_image_size(args.img_size)
-    args.save_json = args.save_json or args.data.endswith('coco.yaml')
+    args.image_size = check_image_size(args.image_size)
+    args.save_json = args.save_json or args.data.endswith('coco2014.yaml') or args.data.endswith('coco2017.yaml')
     print(args)
 
     # task = 'val', 'test', 'study'
-    if args.task in ['val', 'test']:  # (default) run normally
-        evaluate(args.data,
+    if args.task in ['eval', 'test']:  # (default) run normally
+        evaluate(args.config_file,
+                 args.data,
                  args.weights,
                  args.batch_size,
-                 args.img_size,
-                 args.conf_thres,
-                 args.iou_thres,
+                 args.image_size,
+                 args.confidence_threshold,
+                 args.iou_threshold,
                  args.save_json,
                  args.single_cls,
                  args.augment)
@@ -308,4 +329,3 @@ if __name__ == '__main__':
                 y.append(r + t)  # results and times
             np.savetxt(f, y, fmt='%10.4g')  # save
         os.system('zip -r study.zip study_*.txt')
-        # plot_study_txt(f, x)  # plot

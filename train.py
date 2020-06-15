@@ -59,7 +59,7 @@ hyper_parameters = {"lr0": 0.01,  # initial learning rate (SGD=1E-2, Adam=1E-3)
                     "giou": 0.05,  # giou loss gain
                     "classes": 0.58,  # cls loss gain
                     "classes_pw": 1.0,  # cls BCELoss positive_weight
-                    "obj": 1.0,  # obj loss gain (*=imag_size/320 if imag_size != 320)
+                    "obj": 1.0,  # obj loss gain (*=image_size/320 if image_size != 320)
                     "obj_pw": 1.0,  # obj BCELoss positive_weight
                     "iou_t": 0.20,  # iou training threshold
                     "anchor_t": 4.0,  # anchor-multiple threshold
@@ -139,9 +139,9 @@ def train(parameters):
 
         # load model
         try:
-            checkpoint["model"] = {k: v for k, v in checkpoint["model"].items() if
-                                   model.state_dict()[k].numel() == v.numel()}
-            model.load_state_dict(checkpoint["model"], strict=False)
+            checkpoint["state_dict"] = {k: v for k, v in checkpoint["state_dict"].items() if
+                                        model.state_dict()[k].numel() == v.numel()}
+            model.load_state_dict(checkpoint["state_dict"], strict=False)
         except KeyError as e:
             s = f"{args.weights} is not compatible with {args.config_file}. Specify --weights '' or specify a " \
                 f"--config-file compatible with {args.weights}. "
@@ -350,7 +350,8 @@ def train(parameters):
                 state = {"epoch": epoch,
                          "best_fitness": best_fitness,
                          "training_results": f.read(),
-                         "model": ema.ema.module.state_dict() if hasattr(model, "module") else ema.ema.state_dict(),
+                         "state_dict": ema.ema.module.state_dict() if hasattr(model,
+                                                                              "module") else ema.ema.state_dict(),
                          "optimizer": None if final_epoch else optimizer.state_dict()}
 
             # Save last, best and delete
@@ -359,7 +360,8 @@ def train(parameters):
                 state = {"epoch": -1,
                          "best_fitness": None,
                          "training_results": None,
-                         "model": ema.ema.module.state_dict() if hasattr(model, "module") else ema.ema.state_dict(),
+                         "state_dict": ema.ema.module.state_dict() if hasattr(model,
+                                                                              "module") else ema.ema.state_dict(),
                          "optimizer": None}
                 torch.save(state, "weights/model_best.pth")
             del state
