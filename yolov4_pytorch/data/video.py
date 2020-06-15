@@ -13,7 +13,6 @@
 # ==============================================================================
 import os
 import time
-import warnings
 from threading import Thread
 
 import cv2
@@ -33,13 +32,12 @@ class LoadWebCam:
     def __init__(self, pipe=0, image_size=416):
         self.image_size = image_size
 
-        if pipe == "0":
-            # local camera
-            pipe = 0
+        if pipe == '0':
+            pipe = 0  # local camera
 
         self.pipe = pipe
-        self.capture = cv2.VideoCapture(pipe)  # video capture object
-        self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 3)  # set buffer size
+        self.cap = cv2.VideoCapture(pipe)  # video capture object
+        self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 3)  # set buffer size
 
     def __iter__(self):
         self.count = -1
@@ -47,35 +45,35 @@ class LoadWebCam:
 
     def __next__(self):
         self.count += 1
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            self.capture.release()
+        if cv2.waitKey(1) == ord('q'):  # q to quit
+            self.cap.release()
             cv2.destroyAllWindows()
             raise StopIteration
 
         # Read frame
         if self.pipe == 0:  # local camera
-            retval, raw_image = self.capture.read()
+            ret_val, raw_image = self.cap.read()
             raw_image = cv2.flip(raw_image, 1)  # flip left-right
         else:  # IP camera
             n = 0
             while True:
                 n += 1
-                self.capture.grab()
+                self.cap.grab()
                 if n % 30 == 0:  # skip frames
-                    retval, raw_image = self.capture.retrieve()
-                    if retval:
+                    ret_val, raw_image = self.cap.retrieve()
+                    if ret_val:
                         break
 
-        assert retval, f"Camera Error `{self.pipe}`"
-        image_path = "webcam.png"
-        print(f"Webcam {self.count}: ", end="")
+        # Print
+        assert ret_val, f"Camera Error {self.pipe}"
+        image_path = 'webcam.png'
+        print(f"webcam {self.count}: ", end='')
 
-        # Padded resize operation
+        # Padded resize
         image = letterbox(raw_image, new_shape=self.image_size)[0]
 
-        # BGR convert to RGB (3 x 416 x 416)
-        image = image[:, :, ::-1].transpose(2, 0, 1)
-        # Return a contiguous array
+        # Convert
+        image = image[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
         image = np.ascontiguousarray(image)
 
         return image_path, image, raw_image, None
@@ -88,59 +86,53 @@ class LoadStreams:
     """ For reading camera or network data
     Load data types from data flow.
     Args:
-        dataroot (str): Data flow file name.
+        sources (str): Data flow file name.
         image_size (int): Image size in default data flow. (default:``416``).
     """
 
-    def __init__(self, dataroot, image_size=416):
-
-        self.mode = "images"
+    def __init__(self, sources='streams.txt', image_size=416):
+        self.mode = 'images'
         self.image_size = image_size
 
-        if os.path.isfile(dataroot):
-            with open(dataroot, "r") as f:
+        if os.path.isfile(sources):
+            with open(sources, 'r') as f:
                 sources = [x.strip() for x in f.read().splitlines() if len(x.strip())]
         else:
-            sources = [dataroot]
+            sources = [sources]
 
         n = len(sources)
         self.images = [None] * n
         self.sources = sources
         for i, s in enumerate(sources):
             # Start the thread to read frames from the video stream
-            print(f"{i + 1}/{n}: {s}... ", end="")
-
-            capture = cv2.VideoCapture(0 if s == "0" else s)
-            assert capture.isOpened(), f"Failed to open {s}"
-
-            width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
-            height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            fps = capture.get(cv2.CAP_PROP_FPS) % 100
-            _, self.images[i] = capture.read()  # guarantee first frame
-            thread = Thread(target=self.update, args=([i, capture]), daemon=True)
-            print(f"Success ({width}*{height} at {fps:.2f}FPS).")
+            print('%g/%g: %s... ' % (i + 1, n, s), end='')
+            cap = cv2.VideoCapture(0 if s == '0' else s)
+            assert cap.isOpened(), 'Failed to open %s' % s
+            w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            fps = cap.get(cv2.CAP_PROP_FPS) % 100
+            _, self.images[i] = cap.read()  # guarantee first frame
+            thread = Thread(target=self.update, args=([i, cap]), daemon=True)
+            print(' success (%gx%g at %.2f FPS).' % (w, h, fps))
             thread.start()
-        print("")
+        print('')  # newline
 
         # check for common shapes
-        s = np.stack([letterbox(x, new_shape=self.image_size)[0].shape for x in self.images],
-                     0)  # inference shapes
+        s = np.stack([letterbox(x, new_shape=self.image_size)[0].shape for x in self.images], 0)  # inference shapes
         self.rect = np.unique(s, axis=0).shape[0] == 1  # rect inference if all shapes equal
         if not self.rect:
-            warnings.warn("WARNING: Different stream shapes detected. "
-                          "For optimal performance supply similarly-shaped streams.")
+            print('WARNING: Different stream shapes detected. For optimal performance supply similarly-shaped streams.')
 
-    def update(self, index, capture):
+    def update(self, index, cap):
         # Read next stream frame in a daemon thread
-        num = 0
-        while capture.isOpened():
-            num += 1
-            # Grabs the next frame from video file or capturing device.
-            capture.grab()
-            # read every 4th frame
-            if num == 4:
-                _, self.images[index] = capture.retrieve()
-                num = 0
+        n = 0
+        while cap.isOpened():
+            n += 1
+            # _, self.images[index] = cap.read()
+            cap.grab()
+            if n == 4:  # read every 4th frame
+                _, self.images[index] = cap.retrieve()
+                n = 0
             time.sleep(0.01)  # wait time
 
     def __iter__(self):
@@ -150,7 +142,7 @@ class LoadStreams:
     def __next__(self):
         self.count += 1
         raw_image = self.images.copy()
-        if cv2.waitKey(1) & 0xFF == ord("q"):
+        if cv2.waitKey(1) == ord('q'):  # q to quit
             cv2.destroyAllWindows()
             raise StopIteration
 
@@ -160,12 +152,11 @@ class LoadStreams:
         # Stack
         image = np.stack(image, 0)
 
-        # BGR convert to RGB (batch_size 3 x 416 x 416)
+        # Convert
         image = image[:, :, :, ::-1].transpose(0, 3, 1, 2)  # BGR to RGB, to bsx3x416x416
-        # Return a contiguous array
         image = np.ascontiguousarray(image)
 
         return self.sources, image, raw_image, None
 
     def __len__(self):
-        return 0
+        return 0  # 1E12 frames = 32 streams at 30 FPS for 30 years
