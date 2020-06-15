@@ -37,6 +37,9 @@ from .datasets import LoadImages
 from .datasets import LoadImagesAndLabels
 from .datasets import LoadStreams
 from .datasets import LoadWebcam
+from .device import init_seeds
+from .device import select_device
+from .device import time_synchronized
 from .model import YOLO
 from .utils import ModelEMA
 from .utils import ap_per_class
@@ -46,7 +49,6 @@ from .utils import coco80_to_coco91_class
 from .utils import compute_loss
 from .utils import fitness
 from .utils import fuse_conv_and_bn
-from .utils import init_seeds
 from .utils import initialize_weights
 from .utils import labels_to_class_weights
 from .utils import labels_to_image_weights
@@ -61,9 +63,7 @@ from .utils import plot_results
 from .utils import print_mutation
 from .utils import scale_coords
 from .utils import scale_img
-from .utils import select_device
 from .utils import strip_optimizer
-from .utils import time_synchronized
 from .utils import xywh2xyxy
 from .utils import xyxy2xywh
 
@@ -94,6 +94,9 @@ __all__ = [
     "LoadImagesAndLabels",
     "LoadStreams",
     "LoadWebcam",
+    "init_seeds",
+    "select_device",
+    "time_synchronized",
     "YOLO",
     "ModelEMA",
     "ap_per_class",
@@ -103,7 +106,6 @@ __all__ = [
     "compute_loss",
     "fitness",
     "fuse_conv_and_bn",
-    "init_seeds",
     "initialize_weights",
     "labels_to_class_weights",
     "labels_to_image_weights",
@@ -118,9 +120,7 @@ __all__ = [
     "plot_one_box",
     "scale_coords",
     "scale_img",
-    "select_device",
     "strip_optimizer",
-    "time_synchronized",
     "xywh2xyxy",
     "xyxy2xywh",
 

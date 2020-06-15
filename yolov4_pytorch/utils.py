@@ -16,19 +16,16 @@ import math
 import os
 import random
 import shutil
-import subprocess
 import time
 from copy import copy
 from copy import deepcopy
 from pathlib import Path
-from sys import platform
 
 import cv2
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import torch.backends.cudnn as cudnn
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
@@ -42,49 +39,6 @@ matplotlib.rc("font", **{"size": 11})
 
 # Prevent OpenCV from multithreading (to use PyTorch DataLoader)
 cv2.setNumThreads(0)
-
-
-def init_seeds(seed=0):
-    torch.manual_seed(seed)
-
-    # Speed-reproducibility tradeoff https://pytorch.org/docs/stable/notes/randomness.html
-    if seed == 0:  # slower, more reproducible
-        cudnn.deterministic = True
-        cudnn.benchmark = False
-    else:  # faster, less reproducible
-        cudnn.deterministic = False
-        cudnn.benchmark = True
-
-
-def select_device(device="", apex=False, batch_size=None):
-    only_cpu = device.lower() == "cpu"
-    if device and not only_cpu:  # if device requested other than "cpu"
-        os.environ["CUDA_VISIBLE_DEVICES"] = device  # set environment variable
-        assert torch.cuda.is_available(), "CUDA unavailable, invalid device %s requested" % device  # check availablity
-
-    cuda = False if only_cpu else torch.cuda.is_available()
-    if cuda:
-        c = 1024 ** 2  # bytes to MB
-        ng = torch.cuda.device_count()
-        if ng > 1 and batch_size:  # check that batch_size is compatible with device_count
-            assert batch_size % ng == 0, "batch-size %g not multiple of GPU count %g" % (batch_size, ng)
-        x = [torch.cuda.get_device_properties(i) for i in range(ng)]
-        s = "Using CUDA " + ("Apex " if apex else "")  # apex for mixed precision https://github.com/NVIDIA/apex
-        for i in range(0, ng):
-            if i == 1:
-                s = " " * len(s)
-            print("%sdevice%g _CudaDeviceProperties(name=`%s`, total_memory=%dMB)" %
-                  (s, i, x[i].name, x[i].total_memory / c))
-    else:
-        print("Using CPU")
-
-    print("")  # skip a line
-    return torch.device("cuda:0" if cuda else "cpu")
-
-
-def time_synchronized():
-    torch.cuda.synchronize() if torch.cuda.is_available() else None
-    return time.time()
 
 
 def initialize_weights(model):
@@ -214,32 +168,11 @@ class ModelEMA:
                 setattr(self.ema, k, getattr(model, k))
 
 
-def check_git_status():
-    # Suggest "git pull" if repo is out of date
-    if platform in ["linux", "darwin"]:
-        s = subprocess.check_output("if [ -d .git ]; then git fetch && git status -uno; fi", shell=True).decode("utf-8")
-        if "Your branch is behind" in s:
-            print(s[s.find("Your branch is behind"):s.find("\n\n")] + "\n")
-
-
 def check_img_size(img_size, s=32):
     # Verify img_size is a multiple of stride s
     if img_size % s != 0:
         print("WARNING: --img-size %g must be multiple of max stride %g" % (img_size, s))
     return make_divisible(img_size, s)  # nearest gs-multiple
-
-
-def check_best_possible_recall(dataset, anchors, thr):
-    # Check best possible recall of dataset with current anchors
-    wh = torch.tensor(np.concatenate([l[:, 3:5] * s for s, l in zip(dataset.shapes, dataset.labels)])).float()  # wh
-    ratio = wh[:, None] / anchors.view(-1, 2).cpu()[None]  # ratio
-    m = torch.max(ratio, 1. / ratio).max(2)[0]  # max ratio
-    bpr = (m.min(1)[0] < thr).float().mean()  # best possible recall
-    mr = (m < thr).float().mean()  # match ratio
-    print(("Label width-height:" + "%10s" * 6) % ("n", "mean", "min", "max", "matching", "recall"))
-    print(("                   " + "%10.4g" * 6) % (wh.shape[0], wh.mean(), wh.min(), wh.max(), mr, bpr))
-    assert bpr > 0.9, "Best possible recall %.3g (BPR) below 0.9 threshold. Training cancelled. " \
-                      "Compute new anchors with utils.utils.kmeans_anchors() and update model before training." % bpr
 
 
 def make_divisible(x, divisor):
