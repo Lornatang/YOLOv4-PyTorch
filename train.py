@@ -317,7 +317,8 @@ def train(parameters):
         ema.update_attr(model)
         final_epoch = epoch + 1 == epochs
         if not args.notest or final_epoch:  # Calculate mAP
-            results, maps, times = evaluate(args.data,
+            results, maps, times = evaluate(args.config_file,
+                                            args.data,
                                             batch_size=batch_size,
                                             image_size=image_size_test,
                                             save_json=final_epoch,
