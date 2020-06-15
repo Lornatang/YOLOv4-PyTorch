@@ -74,7 +74,7 @@ class Detect(nn.Module):
 
 
 class YOLO(nn.Module):
-    def __init__(self, config_file='yolov5s.yaml', channels=3, classes=None):  # model, input channels, number of classes
+    def __init__(self, config_file='configs/COCO-Detection/yolov5s.yaml', channels=3, classes=None):
         super(YOLO, self).__init__()
         if type(config_file) is dict:
             self.config_file = config_file  # model dict
