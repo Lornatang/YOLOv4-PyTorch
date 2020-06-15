@@ -141,6 +141,8 @@ labels.png
 data/masked/
 data/masked.yaml
 
+# Custom video dir
+video/
 
 # Custom model file
 configs/MASKED-Detection/
