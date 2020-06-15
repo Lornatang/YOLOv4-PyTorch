@@ -21,6 +21,7 @@ from pathlib import Path
 import cv2
 import torch
 import torch.backends.cudnn as cudnn
+import yaml
 
 from yolov4_pytorch.data import LoadImages
 from yolov4_pytorch.data import LoadStreams
@@ -84,7 +85,9 @@ def detect(save_image=False):
         dataset = LoadImages(source, image_size=image_size)
 
     # Get names and colors
-    names = model.names if hasattr(model, "names") else model.modules.names
+    with open(args.data) as data_file:
+        data_dict = yaml.load(data_file, Loader=yaml.FullLoader)  # model dict
+    names = data_dict["names"]
     colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(names))]
 
     # Run inference
@@ -180,6 +183,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config-file", type=str, default="configs/COCO-Detection/yolov5s.yaml",
                         help="Neural network profile path. (default: `configs/COCO-Detection/yolov5s.yaml`)")
+    parser.add_argument("--data", type=str, default="data/coco.yaml",
+                        help="Types of objects detected. (default: data/coco.yaml)")
     parser.add_argument("--weights", type=str, default="weights/yolov5s.pth",
                         help="Model file weight path. (default: `weights/yolov5s.pth`)")
     parser.add_argument("--source", type=str, default="data/examples",

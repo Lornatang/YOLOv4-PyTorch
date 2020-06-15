@@ -81,9 +81,6 @@ def evaluate(config_file,
         # model.fuse()
         model.to(device)
 
-        # Model parameters
-        model.names = data_dict["names"]
-
         if device.type != 'cpu' and torch.cuda.device_count() > 1:
             model = nn.DataParallel(model)
 
