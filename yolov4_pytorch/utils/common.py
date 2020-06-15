@@ -11,8 +11,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-import numpy as np
 import math
+
+import numpy as np
+import torch
 
 from .loss import fitness
 
@@ -137,3 +139,28 @@ def print_mutation(hyp, results):
         f.write(c + b + "\n")
     x = np.unique(np.loadtxt("evolve.txt", ndmin=2), axis=0)  # load unique rows
     np.savetxt("evolve.txt", x[np.argsort(-fitness(x))], "%10.3g")  # save sort by fitness
+
+
+def output_to_target(output, width, height):
+    """
+    Convert a YOLO model output to target format
+    [batch_id, class_id, x, y, w, h, conf]
+    """
+    if isinstance(output, torch.Tensor):
+        output = output.cpu().numpy()
+
+    targets = []
+    for i, o in enumerate(output):
+        if o is not None:
+            for pred in o:
+                box = pred[:4]
+                w = (box[2] - box[0]) / width
+                h = (box[3] - box[1]) / height
+                x = box[0] / width + w / 2
+                y = box[1] / height + h / 2
+                conf = pred[4]
+                cls = int(pred[5])
+
+                targets.append([i, cls, x, y, w, h, conf])
+
+    return np.array(targets)

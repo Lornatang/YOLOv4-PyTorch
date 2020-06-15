@@ -15,6 +15,7 @@ from .common import ap_per_class
 from .common import coco80_to_coco91_class
 from .common import compute_ap
 from .common import make_divisible
+from .common import output_to_target
 from .common import print_mutation
 from .coords import clip_coords
 from .coords import scale_coords
@@ -26,12 +27,15 @@ from .device import time_synchronized
 from .iou import bbox_iou
 from .iou import box_iou
 from .iou import wh_iou
+from .loss import BCEBlurWithLogitsLoss
 from .loss import FocalLoss
 from .loss import build_targets
 from .loss import compute_loss
 from .loss import fitness
 from .loss import smooth_BCE
 from .nms import non_max_suppression
+from .plot import plot_images
+from .plot import plot_labels
 from .plot import plot_one_box
 from .plot import plot_results
 from .weights import initialize_weights
@@ -43,6 +47,7 @@ __all__ = [
     "coco80_to_coco91_class",
     "compute_ap",
     "make_divisible",
+    "output_to_target",
     "print_mutation",
     "clip_coords",
     "scale_coords",
@@ -54,12 +59,15 @@ __all__ = [
     "bbox_iou",
     "box_iou",
     "wh_iou",
+    "BCEBlurWithLogitsLoss",
     "FocalLoss",
     "build_targets",
     "compute_loss",
     "fitness",
     "smooth_BCE",
     "non_max_suppression",
+    "plot_images",
+    "plot_labels",
     "plot_one_box",
     "plot_results",
     "initialize_weights",
