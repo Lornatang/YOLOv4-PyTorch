@@ -52,11 +52,6 @@ except:
     print("Apex recommended for faster mixed precision training: https://github.com/NVIDIA/apex")
     mixed_precision = False  # not installed
 
-wdir = "weights" + os.sep  # weights dir
-last = wdir + "last.pth"
-best = wdir + "best.pth"
-results_file = "results.txt"
-
 # Hyper parameters
 hyper_parameters = {"lr0": 0.01,  # initial learning rate (SGD=1E-2, Adam=1E-3)
                     "momentum": 0.937,  # SGD momentum
@@ -130,9 +125,7 @@ def train(parameters):
             else:
                 pg0.append(model_value)  # all else
 
-    optimizer = optim.Adam(pg0, lr=parameters["lr0"]) if args.adam else optim.SGD(pg0, lr=parameters["lr0"],
-                                                                                  momentum=parameters["momentum"],
-                                                                                  nesterov=True)
+    optimizer = optim.SGD(pg0, lr=parameters["lr0"], momentum=parameters["momentum"], nesterov=True)
     optimizer.add_param_group({"params": pg1, "weight_decay": parameters["weight_decay"]})  # add pg1 with weight_decay
     optimizer.add_param_group({"params": pg2})  # add pg2 (biases)
     print(f"Optimizer groups: {len(pg2)} .bias, {len(pg1)} conv.weight, {len(pg0)} other")
@@ -146,12 +139,12 @@ def train(parameters):
 
         # load model
         try:
-            checkpoint["model"] = {k: v for k, v in checkpoint["model"].state_dict().items() if
+            checkpoint["model"] = {k: v for k, v in checkpoint["model"].items() if
                                    model.state_dict()[k].numel() == v.numel()}
             model.load_state_dict(checkpoint["model"], strict=False)
         except KeyError as e:
             s = f"{args.weights} is not compatible with {args.config_file}. Specify --weights '' or specify a " \
-                f"--config_file compatible with {args.weights}. "
+                f"--config-file compatible with {args.weights}. "
             raise KeyError(s) from e
 
         # load optimizer
@@ -161,7 +154,7 @@ def train(parameters):
 
         # load results
         if checkpoint.get("training_results") is not None:
-            with open(results_file, "w") as file:
+            with open("results.txt", "w") as file:
                 file.write(checkpoint["training_results"])  # write results.txt
 
         start_epoch = checkpoint["epoch"] + 1
@@ -217,7 +210,7 @@ def train(parameters):
                                                   collate_fn=collate_fn)
 
     # Model parameters
-    parameters["classes"] *= classes / 80.  # scale coco-tuned hyp["cls"] to current dataset
+    parameters["classes"] *= classes / 80.  # scale COCO-Detection-tuned parameters["classes"] to current dataset
     model.classes = classes  # attach number of classes to model
     model.hyper_parameters = parameters  # attach hyper parameters to model
     model.gr = 1.0  # giou loss ratio (obj_loss = 1.0 or giou)
@@ -327,14 +320,14 @@ def train(parameters):
             results, maps, times = evaluate(args.data,
                                             batch_size=batch_size,
                                             image_size=image_size_test,
-                                            save_json=final_epoch and args.data.endswith(os.sep + "coco.yaml"),
+                                            save_json=final_epoch,
                                             model=ema.ema,
                                             single_cls=args.single_cls,
                                             dataloader=test_dataloader,
                                             fast=ni < n_burn)
 
         # Write
-        with open(results_file, "a") as f:
+        with open("results.txt", "a") as f:
             f.write(s + "%10.4g" * 7 % results + "\n")  # P, R, mAP, F1, test_losses=(GIoU, obj, cls)
 
         # Tensorboard
@@ -353,18 +346,23 @@ def train(parameters):
         # Save model
         save = (not args.nosave) or (final_epoch and not args.evolve)
         if save:
-            with open(results_file, "r") as f:  # create checkpoint
-                checkpoint = {"epoch": epoch,
-                              "best_fitness": best_fitness,
-                              "training_results": f.read(),
-                              "model": ema.ema.module if hasattr(model, "module") else ema.ema,
-                              "optimizer": None if final_epoch else optimizer.state_dict()}
+            with open("results.txt", "r") as f:  # create checkpoint
+                state = {"epoch": epoch,
+                         "best_fitness": best_fitness,
+                         "training_results": f.read(),
+                         "model": ema.ema.module.state_dict() if hasattr(model, "module") else ema.ema.state_dict(),
+                         "optimizer": None if final_epoch else optimizer.state_dict()}
 
             # Save last, best and delete
-            torch.save(checkpoint, last)
+            torch.save(state, "weights/checkpoint.pth")
             if (best_fitness == fi) and not final_epoch:
-                torch.save(checkpoint, best)
-            del checkpoint
+                state = {"epoch": -1,
+                         "best_fitness": None,
+                         "training_results": None,
+                         "model": ema.ema.module.state_dict() if hasattr(model, "module") else ema.ema.state_dict(),
+                         "optimizer": None}
+                torch.save(state, "weights/model_best.pth")
+            del state
 
     if not args.evolve:
         plot_results()  # save as results.png
@@ -376,27 +374,45 @@ def train(parameters):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--epochs", type=int, default=300)
-    parser.add_argument("--batch-size", type=int, default=16)
-    parser.add_argument("--config-file", type=str, default="models/yolov5s.yaml", help="*.config_file path")
-    parser.add_argument("--data", type=str, default="data/coco.yaml", help="*.data path")
+    parser.add_argument("--epochs", type=int, default=300,
+                        help="500500 is YOLOv4 max batches. (default: 300)")
+    parser.add_argument("--batch-size", type=int, default=16,
+                        help="mini-batch size (default: 16), this is the total "
+                             "batch size of all GPUs on the current node when "
+                             "using Data Parallel or Distributed Data Parallel"
+                             "Effective batch size is 64 // batch_size.")
+    parser.add_argument("--config-file", type=str, default="configs/COCO-Detection/yolov5s.yaml",
+                        help="Neural network profile path. (default: `configs/COCO-Detection/yolov5s.yaml`)")
+    parser.add_argument("--data", type=str, default="data/coco2014.yaml",
+                        help="Path to dataset. (default: data/coco2014.yaml)")
     parser.add_argument("--workers", default=8, type=int, metavar="N",
                         help="Number of data loading workers (default: 8)")
-    parser.add_argument("--image-size", nargs="+", type=int, default=[640, 640], help="train,test sizes")
-    parser.add_argument("--rect", action="store_true", help="rectangular training")
-    parser.add_argument("--resume", action="store_true", help="resume training from last.pth")
-    parser.add_argument("--nosave", action="store_true", help="only save final checkpoint")
-    parser.add_argument("--notest", action="store_true", help="only test final epoch")
-    parser.add_argument("--evolve", action="store_true", help="evolve hyper parameters")
-    parser.add_argument("--cache-images", action="store_true", help="cache images for faster training")
-    parser.add_argument("--weights", type=str, default="", help="initial weights path")
-    parser.add_argument("--name", default="", help="renames results.txt to results_name.txt if supplied")
-    parser.add_argument("--device", default="", help="cuda device, i.e. 0 or 0,1,2,3 or cpu")
-    parser.add_argument("--adam", action="store_true", help="use adam optimizer")
-    parser.add_argument("--multi-scale", action="store_true", help="vary imag-size +/- 50%")
-    parser.add_argument("--single-cls", action="store_true", help="train as single-class dataset")
+    parser.add_argument("--multi-scale", action="store_true",
+                        help="adjust (67% - 150%) img_size every 10 batches")
+    parser.add_argument("--image-size", nargs="+", type=int, default=[640, 640],
+                        help="Size of processing picture. (default: [640, 640])")
+    parser.add_argument("--rect", action="store_true",
+                        help="rectangular training for faster training.")
+    parser.add_argument("--resume", action="store_true",
+                        help="resume training from checkpoint.pth")
+    parser.add_argument("--nosave", action="store_true",
+                        help="only save final checkpoint")
+    parser.add_argument("--notest", action="store_true",
+                        help="only test final epoch")
+    parser.add_argument("--evolve", action="store_true",
+                        help="evolve hyper parameters")
+    parser.add_argument("--cache-images", action="store_true",
+                        help="cache images for faster training.")
+    parser.add_argument("--weights", type=str, default="",
+                        help="Initial weights path. (default: ``)")
+    parser.add_argument("--device", default="",
+                        help="device id (i.e. 0 or 0,1 or cpu)")
+    parser.add_argument("--single-cls", action="store_true",
+                        help="train as single-class dataset")
     args = parser.parse_args()
-    args.weights = last if args.resume else args.weights
+
+    args.weights = "weights/checkpoint.pth" if args.resume else args.weights
+
     print(args)
     args.image_size.extend([args.image_size[-1]] * (2 - len(args.image_size)))  # extend to 2 sizes (train, test)
     device = select_device(args.device, apex=mixed_precision, batch_size=args.batch_size)
@@ -404,13 +420,18 @@ if __name__ == "__main__":
     if device.type == "cpu":
         mixed_precision = False
 
+    try:
+        os.makedirs("weights")
+    except OSError:
+        pass
+
     # Train
     if not args.evolve:
-        tb_writer = SummaryWriter(comment=args.name)
+        tb_writer = SummaryWriter()
         print("Start Tensorboard with `tensorboard --logdir=runs`, view at http://localhost:6006/")
         train(hyper_parameters)
 
-    # Evolve hyperparameters (optional)
+    # Evolve hyper parameters (optional)
     else:
         tb_writer = None
         args.notest, args.nosave = True, True  # only test/save final epoch
