@@ -57,10 +57,10 @@ def evaluate(data,
              verbose=False):  # 0 fast, 1 accurate
     # Initialize/load model and set device
     if model is None:
-        device = select_device(opt.device, batch_size=batch_size)
+        device = select_device(args.device, batch_size=batch_size)
 
         # Remove previous
-        for filename in glob.glob('test_batch*.png'):
+        for filename in glob.glob('test_batch_*.png'):
             os.remove(filename)
 
         # Load model
@@ -80,7 +80,7 @@ def evaluate(data,
     # Configure run
     with open(data) as filename:
         data = yaml.load(filename, Loader=yaml.FullLoader)  # model dict
-    nc = 1 if single_cls else int(data['nc'])  # number of classes
+    nc = 1 if single_cls else int(data['classes'])  # number of classes
     iouv = torch.linspace(0.5, 0.95, 10).to(device)  # iou vector for mAP@0.5:0.95
     # iouv = iouv[0].view(1)  # comment for mAP@0.5:0.95
     niou = iouv.numel()
@@ -88,12 +88,12 @@ def evaluate(data,
     # Dataloader
     if dataloader is None:
         fast |= confidence_threshold > 0.001  # enable fast mode
-        path = data['test'] if opt.task == 'test' else data['val']  # path to val/test images
+        path = data['test'] if args.task == 'test' else data['val']  # path to val/test images
         dataset = LoadImagesAndLabels(path,
                                       image_size,
                                       batch_size,
                                       rect=True,  # rectangular inference
-                                      single_cls=opt.single_cls,  # single class mode
+                                      single_cls=args.single_cls,  # single class mode
                                       pad=0.0 if fast else 0.5)  # padding
         batch_size = min(batch_size, len(dataset))
         nw = min([os.cpu_count(), batch_size if batch_size > 1 else 0, 8])  # number of workers
@@ -131,7 +131,10 @@ def evaluate(data,
 
             # Run NMS
             t = time_synchronized()
-            output = non_max_suppression(inf_out, conf_thres=confidence_threshold, iou_thres=iou_threshold, fast=fast)
+            output = non_max_suppression(inf_out,
+                                         confidence_threshold=confidence_threshold,
+                                         iou_threshold=iou_threshold,
+                                         fast=fast)
             t1 += time_synchronized() - t
 
         # Statistics per image
@@ -200,9 +203,9 @@ def evaluate(data,
 
         # Plot images
         if batch_i < 1:
-            filename = 'test_batch%g_gt.jpg' % batch_i  # filename
+            filename = f'test_batch_{batch_i}_gt.png'  # filename
             plot_images(imgs, targets, paths, filename, names)  # ground truth
-            filename = 'test_batch%g_pred.jpg' % batch_i
+            filename = f'test_batch_{batch_i}_pred.png'
             plot_images(imgs, output_to_target(output, width, height), paths, filename, names)  # predictions
 
     # Compute statistics
@@ -232,7 +235,7 @@ def evaluate(data,
     # Save JSON
     if save_json and map50 and len(jdict):
         imgIds = [int(Path(x).stem.split('_')[-1]) for x in dataloader.dataset.image_files]
-        filename = f"detections_val2017_{(weights.split(os.sep)[-1].replace('.pt', '') if weights else'')}_results.json"
+        filename = f"detections_val2017_{(weights.split(os.sep)[-1].replace('.pt', '') if weights else '')}_results.json"
         print('\nCOCO mAP with pycocotools... saving %s...' % filename)
         with open(filename, 'w') as file:
             json.dump(jdict, file)
@@ -276,31 +279,32 @@ if __name__ == '__main__':
     parser.add_argument('--single-cls', action='store_true', help='treat as single-class dataset')
     parser.add_argument('--augment', action='store_true', help='augmented inference')
     parser.add_argument('--verbose', action='store_true', help='report mAP by class')
-    opt = parser.parse_args()
-    opt.img_size = check_image_size(opt.img_size)
-    opt.save_json = opt.save_json or opt.data.endswith('coco.yaml')
-    print(opt)
+    args = parser.parse_args()
+    args.img_size = check_image_size(args.img_size)
+    args.save_json = args.save_json or args.data.endswith('coco.yaml')
+    print(args)
 
     # task = 'val', 'test', 'study'
-    if opt.task in ['val', 'test']:  # (default) run normally
-        evaluate(opt.data,
-                 opt.weights,
-                 opt.batch_size,
-                 opt.img_size,
-                 opt.conf_thres,
-                 opt.iou_thres,
-                 opt.save_json,
-                 opt.single_cls,
-                 opt.augment)
+    if args.task in ['val', 'test']:  # (default) run normally
+        evaluate(args.data,
+                 args.weights,
+                 args.batch_size,
+                 args.img_size,
+                 args.conf_thres,
+                 args.iou_thres,
+                 args.save_json,
+                 args.single_cls,
+                 args.augment)
 
-    elif opt.task == 'study':  # run over a range of settings and save/plot
+    elif args.task == 'study':  # run over a range of settings and save/plot
         for weights in ['yolov5s.pth', 'yolov5m.pth', 'yolov5l.pth', 'yolov5x.pth']:
-            f = 'study_%s_%s.txt' % (Path(opt.data).stem, Path(weights).stem)  # filename to save to
+            f = 'study_%s_%s.txt' % (Path(args.data).stem, Path(weights).stem)  # filename to save to
             x = list(range(288, 896, 64))  # x axis
             y = []  # y axis
             for i in x:  # img-size
                 print('\nRunning %s point %s...' % (f, i))
-                r, _, t = evaluate(opt.data, weights, opt.batch_size, i, opt.conf_thres, opt.iou_thres, opt.save_json)
+                r, _, t = evaluate(args.data, weights, args.batch_size, i, args.conf_thres, args.iou_thres,
+                                   args.save_json)
                 y.append(r + t)  # results and times
             np.savetxt(f, y, fmt='%10.4g')  # save
         os.system('zip -r study.zip study_*.txt')

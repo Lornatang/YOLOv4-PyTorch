@@ -132,7 +132,9 @@ dmypy.json
 
 # Program run temp file
 runs/
-*.png
+results.txt
+train_batch_*.png
+test_batch_*.png
 
 # Custom dataset dir
 data/masked
