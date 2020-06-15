@@ -123,11 +123,23 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Custom
-.idea
-.vscode
+# IDE file
+.idea/
+.vscode/
 
+# Mac configure file
 *.DS_Store
+
+# Program run temp file
+runs/
+
+# Custom dataset dir
+data/masked
+data/masked.yaml
+
+
+# Custom model file
+config/masked/
 
 *.pth
 

@@ -20,13 +20,29 @@ from .activations import Swish
 from .activations import SwishImplementation
 from .classifier import apply_classifier
 from .classifier import load_classifier
+from .common import Bottleneck
+from .common import BottleneckCSP
+from .common import Concat
+from .common import Conv
+from .common import ConvPlus
+from .common import DWConv
+from .common import Flatten
+from .common import Focus
+from .common import GhostBottleneck
+from .common import GhostConv
+from .common import MixConv2d
+from .common import SPP
+from .common import Sum
 from .datasets import LoadImages
 from .datasets import LoadImagesAndLabels
 from .datasets import LoadStreams
 from .datasets import LoadWebcam
+from .model import YOLO
 from .utils import ModelEMA
+from .utils import ap_per_class
 from .utils import check_img_size
-from .utils import compute_ap
+from .utils import clip_coords
+from .utils import coco80_to_coco91_class
 from .utils import compute_loss
 from .utils import fitness
 from .utils import fuse_conv_and_bn
@@ -37,6 +53,7 @@ from .utils import labels_to_image_weights
 from .utils import make_divisible
 from .utils import model_info
 from .utils import non_max_suppression
+from .utils import output_to_target
 from .utils import plot_images
 from .utils import plot_labels
 from .utils import plot_one_box
@@ -60,11 +77,31 @@ __all__ = [
     "SwishImplementation",
     "apply_classifier",
     "load_classifier",
+    "Bottleneck",
+    "BottleneckCSP",
+    "Concat",
+    "Conv",
+    "ConvPlus",
+    "DWConv",
+    "Flatten",
+    "Focus",
+    "GhostBottleneck",
+    "GhostConv",
+    "MixConv2d",
+    "SPP",
+    "Sum",
     "LoadImages",
     "LoadImagesAndLabels",
     "LoadStreams",
     "LoadWebcam",
+    "YOLO",
+    "ModelEMA",
+    "ap_per_class",
     "check_img_size",
+    "clip_coords",
+    "coco80_to_coco91_class",
+    "compute_loss",
+    "fitness",
     "fuse_conv_and_bn",
     "init_seeds",
     "initialize_weights",
@@ -73,12 +110,18 @@ __all__ = [
     "make_divisible",
     "model_info",
     "non_max_suppression",
+    "output_to_target",
+    "plot_images",
     "plot_labels",
+    "plot_results",
+    "print_mutation",
     "plot_one_box",
     "scale_coords",
     "scale_img",
     "select_device",
+    "strip_optimizer",
     "time_synchronized",
     "xywh2xyxy",
     "xyxy2xywh",
+
 ]

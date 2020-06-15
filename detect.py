@@ -22,17 +22,17 @@ import cv2
 import torch
 import torch.backends.cudnn as cudnn
 
-from yolov4.utils import LoadImages
-from yolov4.utils import LoadStreams
-from yolov4.utils import apply_classifier
-from yolov4.utils import check_img_size
-from yolov4.utils import load_classifier
-from yolov4.utils import non_max_suppression
-from yolov4.utils import plot_one_box
-from yolov4.utils import scale_coords
-from yolov4.utils import select_device
-from yolov4.utils import time_synchronized
-from yolov4.utils import xyxy2xywh
+from yolov4_pytorch import LoadImages
+from yolov4_pytorch import LoadStreams
+from yolov4_pytorch import apply_classifier
+from yolov4_pytorch import check_img_size
+from yolov4_pytorch import load_classifier
+from yolov4_pytorch import non_max_suppression
+from yolov4_pytorch import plot_one_box
+from yolov4_pytorch import scale_coords
+from yolov4_pytorch import select_device
+from yolov4_pytorch import time_synchronized
+from yolov4_pytorch import xyxy2xywh
 
 
 def detect(save_img=False):

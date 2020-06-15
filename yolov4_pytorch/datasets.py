@@ -744,7 +744,7 @@ def cutout(image, labels):
         # Intersection over box2 area
         return inter_area / box2_area
 
-    # create random masks
+    # create random masked
     scales = [0.5] * 1 + [0.25] * 2 + [0.125] * 4 + [0.0625] * 8 + [0.03125] * 16  # image size fraction
     for s in scales:
         mask_h = random.randint(1, int(h * s))

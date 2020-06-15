@@ -15,29 +15,28 @@
     Overall structure of the model.
 """
 import argparse
-import glob
 import math
 
 import torch
 import torch.nn as nn
 import yaml
 
-from yolov4.models import Bottleneck
-from yolov4.models import BottleneckCSP
-from yolov4.models import Concat
-from yolov4.models import Conv
-from yolov4.models import ConvPlus
-from yolov4.models import DWConv
-from yolov4.models import Focus
-from yolov4.models import MixConv2d
-from yolov4.models import SPP
-from yolov4.utils import fuse_conv_and_bn
-from yolov4.utils import initialize_weights
-from yolov4.utils import make_divisible
-from yolov4.utils import model_info
-from yolov4.utils import scale_img
-from yolov4.utils import select_device
-from yolov4.utils import time_synchronized
+from .common import Bottleneck
+from .common import BottleneckCSP
+from .common import Concat
+from .common import Conv
+from .common import ConvPlus
+from .common import DWConv
+from .common import Focus
+from .common import MixConv2d
+from .common import SPP
+from .utils import fuse_conv_and_bn
+from .utils import initialize_weights
+from .utils import make_divisible
+from .utils import model_info
+from .utils import scale_img
+from .utils import select_device
+from .utils import time_synchronized
 
 
 class Detect(nn.Module):
@@ -79,9 +78,9 @@ class Detect(nn.Module):
         return torch.stack((xv, yv), 2).view((1, 1, ny, nx, 2)).float()
 
 
-class Model(nn.Module):
+class YOLO(nn.Module):
     def __init__(self, model_cfg='yolov5s.yaml', ch=3, nc=None):  # model, input channels, number of classes
-        super(Model, self).__init__()
+        super(YOLO, self).__init__()
         if type(model_cfg) is dict:
             self.md = model_cfg  # model dict
         else:  # is *.yaml
@@ -240,28 +239,12 @@ def parse_model(md, ch):  # model_dict, input_channels(3)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--cfg', type=str, default='yolov5s.yaml', help='model.yaml')
+    parser.add_argument('--config-file', type=str, default='../config/yolov5s.yaml', help='model.yaml')
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
-    opt = parser.parse_args()
-    opt.cfg = glob.glob('./**/' + opt.cfg, recursive=True)[0]  # find file
-    device = select_device(opt.device)
+    args = parser.parse_args()
+    device = select_device(args.device)
 
     # Create model
-    model = Model(opt.cfg).to(device)
+    model = YOLO(args.config_file).to(device)
     model.train()
-
-    # Profile
-    # img = torch.rand(8 if torch.cuda.is_available() else 1, 3, 640, 640).to(device)
-    # y = model(img, profile=True)
-    # print([y[0].shape] + [x.shape for x in y[1]])
-
-    # ONNX export
-    # model.model[-1].export = True
-    # torch.onnx.export(model, img, f.replace('.yaml', '.onnx'), verbose=True, opset_version=11)
-
-    # Tensorboard
-    # from torch.utils.tensorboard import SummaryWriter
-    # tb_writer = SummaryWriter()
-    # print("Run 'tensorboard --logdir=models/runs' to view tensorboard at http://localhost:6006/")
-    # tb_writer.add_graph(model.model, img)  # add model to tensorboard
-    # tb_writer.add_image('test', img[0], dataformats='CWH')  # add model to tensorboard
+    print(model)

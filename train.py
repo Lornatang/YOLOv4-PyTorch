@@ -1,3 +1,16 @@
+# Copyright 2020 Lorna Authors. All Rights Reserved.
+# Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
 import argparse
 import glob
 import math
@@ -16,21 +29,21 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import torch.utils.data
 import test  # import test.py to get mAP after each epoch
-from yolov4.models import Model
-from yolov4.utils import LoadImagesAndLabels
-from yolov4.utils import ModelEMA
-from yolov4.utils import check_img_size
-from yolov4.utils import compute_loss
-from yolov4.utils import fitness
-from yolov4.utils import init_seeds
-from yolov4.utils import labels_to_class_weights
-from yolov4.utils import labels_to_image_weights
-from yolov4.utils import plot_images
-from yolov4.utils import plot_labels
-from yolov4.utils import plot_results
-from yolov4.utils import print_mutation
-from yolov4.utils import select_device
-from yolov4.utils import strip_optimizer
+from yolov4_pytorch import YOLO
+from yolov4_pytorch import LoadImagesAndLabels
+from yolov4_pytorch import ModelEMA
+from yolov4_pytorch import check_img_size
+from yolov4_pytorch import compute_loss
+from yolov4_pytorch import fitness
+from yolov4_pytorch import init_seeds
+from yolov4_pytorch import labels_to_class_weights
+from yolov4_pytorch import labels_to_image_weights
+from yolov4_pytorch import plot_images
+from yolov4_pytorch import plot_labels
+from yolov4_pytorch import plot_results
+from yolov4_pytorch import print_mutation
+from yolov4_pytorch import select_device
+from yolov4_pytorch import strip_optimizer
 
 mixed_precision = True
 try:  # Mixed precision training https://github.com/NVIDIA/apex
@@ -78,29 +91,29 @@ if hyp["fl_gamma"]:
 
 
 def train(hyp):
-    epochs = opt.epochs  # 300
-    batch_size = opt.batch_size  # 64
-    weights = opt.weights  # initial training weights
+    epochs = args.epochs  # 300
+    batch_size = args.batch_size  # 64
+    weights = args.weights  # initial training weights
 
     # Configure
     init_seeds(1)
-    with open(opt.data) as f:
+    with open(args.data) as f:
         data_dict = yaml.load(f, Loader=yaml.FullLoader)  # model dict
     train_path = data_dict["train"]
     test_path = data_dict["val"]
-    nc = 1 if opt.single_cls else int(data_dict["nc"])  # number of classes
+    nc = 1 if args.single_cls else int(data_dict["nc"])  # number of classes
 
     # Remove previous results
     for f in glob.glob("*_batch*.jpg") + glob.glob(results_file):
         os.remove(f)
 
     # Create model
-    model = Model(opt.cfg).to(device)
-    assert model.md["nc"] == nc, "%s nc=%g classes but %s nc=%g classes" % (opt.data, nc, opt.cfg, model.md["nc"])
+    model = YOLO(args.cfg).to(device)
+    assert model.md["nc"] == nc, "%s nc=%g classes but %s nc=%g classes" % (args.data, nc, args.cfg, model.md["nc"])
 
     # Image sizes
     gs = int(max(model.stride))  # grid size (max stride)
-    imagsz, imagsz_test = [check_img_size(x, gs) for x in opt.imag_size]  # verify imagsz are gs-multiples
+    imagsz, imagsz_test = [check_img_size(x, gs) for x in args.imag_size]  # verify imagsz are gs-multiples
 
     # Optimizer
     nbs = 64  # nominal batch size
@@ -116,7 +129,7 @@ def train(hyp):
             else:
                 pg0.append(v)  # all else
 
-    optimizer = optim.Adam(pg0, lr=hyp["lr0"]) if opt.adam else \
+    optimizer = optim.Adam(pg0, lr=hyp["lr0"]) if args.adam else \
         optim.SGD(pg0, lr=hyp["lr0"], momentum=hyp["momentum"], nesterov=True)
     optimizer.add_param_group({"params": pg1, "weight_decay": hyp["weight_decay"]})  # add pg1 with weight_decay
     optimizer.add_param_group({"params": pg2})  # add pg2 (biases)
@@ -135,7 +148,7 @@ def train(hyp):
             model.load_state_dict(ckpt["model"], strict=False)
         except KeyError as e:
             s = "%s is not compatible with %s. Specify --weights "" or specify a --cfg compatible with %s." \
-                % (opt.weights, opt.cfg, opt.weights)
+                % (args.weights, args.cfg, args.weights)
             raise KeyError(s) from e
 
         # load optimizer
@@ -174,11 +187,11 @@ def train(hyp):
     dataset = LoadImagesAndLabels(train_path, imagsz, batch_size,
                                   augment=True,
                                   hyp=hyp,  # augmentation hyperparameters
-                                  rect=opt.rect,  # rectangular training
-                                  cache_images=opt.cache_images,
-                                  single_cls=opt.single_cls)
+                                  rect=args.rect,  # rectangular training
+                                  cache_images=args.cache_images,
+                                  single_cls=args.single_cls)
     mlc = np.concatenate(dataset.labels, 0)[:, 0].max()  # max label class
-    assert mlc < nc, "Label class %g exceeds nc=%g in %s. Correct your labels or your model." % (mlc, nc, opt.cfg)
+    assert mlc < nc, "Label class %g exceeds nc=%g in %s. Correct your labels or your model." % (mlc, nc, args.cfg)
 
     # Dataloader
     batch_size = min(batch_size, len(dataset))
@@ -186,7 +199,7 @@ def train(hyp):
     dataloader = torch.utils.data.DataLoader(dataset,
                                              batch_size=batch_size,
                                              num_workers=nw,
-                                             shuffle=not opt.rect,  # Shuffle=True unless rectangular training is used
+                                             shuffle=not args.rect,  # Shuffle=True unless rectangular training is used
                                              pin_memory=True,
                                              collate_fn=dataset.collate_fn)
 
@@ -194,8 +207,8 @@ def train(hyp):
     testloader = torch.utils.data.DataLoader(LoadImagesAndLabels(test_path, imagsz_test, batch_size,
                                                                  hyp=hyp,
                                                                  rect=True,
-                                                                 cache_images=opt.cache_images,
-                                                                 single_cls=opt.single_cls),
+                                                                 cache_images=args.cache_images,
+                                                                 single_cls=args.single_cls),
                                              batch_size=batch_size,
                                              num_workers=nw,
                                              pin_memory=True,
@@ -258,7 +271,7 @@ def train(hyp):
                         x["momentum"] = np.interp(ni, xi, [0.9, hyp["momentum"]])
 
             # Multi-scale
-            if opt.multi_scale:
+            if args.multi_scale:
                 sz = random.randrange(imagsz * 0.5, imagsz * 1.5 + gs) // gs * gs  # size
                 sf = sz / max(imags.shape[2:])  # scale factor
                 if sf != 1:
@@ -310,21 +323,21 @@ def train(hyp):
         # mAP
         ema.update_attr(model)
         final_epoch = epoch + 1 == epochs
-        if not opt.notest or final_epoch:  # Calculate mAP
-            results, maps, times = test.test(opt.data,
+        if not args.notest or final_epoch:  # Calculate mAP
+            results, maps, times = test.test(args.data,
                                              batch_size=batch_size,
                                              imgsz=imagsz_test,
-                                             save_json=final_epoch and opt.data.endswith(os.sep + "coco.yaml"),
+                                             save_json=final_epoch and args.data.endswith(os.sep + "coco.yaml"),
                                              model=ema.ema,
-                                             single_cls=opt.single_cls,
+                                             single_cls=args.single_cls,
                                              dataloader=testloader,
                                              fast=ni < n_burn)
 
         # Write
         with open(results_file, "a") as f:
             f.write(s + "%10.4g" * 7 % results + "\n")  # P, R, mAP, F1, test_losses=(GIoU, obj, cls)
-        if len(opt.name) and opt.bucket:
-            os.system("gsutil cp results.txt gs://%s/results/results%s.txt" % (opt.bucket, opt.name))
+        if len(args.name) and args.bucket:
+            os.system("gsutil cp results.txt gs://%s/results/results%s.txt" % (args.bucket, args.name))
 
         # Tensorboard
         if tb_writer:
@@ -340,7 +353,7 @@ def train(hyp):
             best_fitness = fi
 
         # Save model
-        save = (not opt.nosave) or (final_epoch and not opt.evolve)
+        save = (not args.nosave) or (final_epoch and not args.evolve)
         if save:
             with open(results_file, "r") as f:  # create checkpoint
                 ckpt = {"epoch": epoch,
@@ -358,7 +371,7 @@ def train(hyp):
         # end epoch ----------------------------------------------------------------------------------------------------
     # end training
 
-    n = opt.name
+    n = args.name
     if len(n):
         n = "_" + n if not n.isnumeric() else n
         fresults, flast, fbest = "results%s.txt" % n, wdir + "last%s.pth" % n, wdir + "best%s.pth" % n
@@ -367,9 +380,9 @@ def train(hyp):
                 os.rename(f1, f2)  # rename
                 ispt = f2.endswith(".pth")  # is *.pth
                 strip_optimizer(f2) if ispt else None  # strip optimizer
-                os.system("gsutil cp %s gs://%s/weights" % (f2, opt.bucket)) if opt.bucket and ispt else None  # upload
+                os.system("gsutil cp %s gs://%s/weights" % (f2, args.bucket)) if args.bucket and ispt else None  # upload
 
-    if not opt.evolve:
+    if not args.evolve:
         plot_results()  # save as results.png
     print("%g epochs completed in %.3f hours.\n" % (epoch - start_epoch + 1, (time.time() - t0) / 3600))
     dist.destroy_process_group() if torch.cuda.device_count() > 1 else None
@@ -382,7 +395,7 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", type=int, default=300)
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--cfg", type=str, default="models/yolov5s.yaml", help="*.cfg path")
-    parser.add_argument("--data", type=str, default="data/coco128.yaml", help="*.data path")
+    parser.add_argument("--data", type=str, default="data/coco.yaml", help="*.data path")
     parser.add_argument("--imag-size", nargs="+", type=int, default=[640, 640], help="train,test sizes")
     parser.add_argument("--rect", action="store_true", help="rectangular training")
     parser.add_argument("--resume", action="store_true", help="resume training from last.pth")
@@ -397,29 +410,29 @@ if __name__ == "__main__":
     parser.add_argument("--adam", action="store_true", help="use adam optimizer")
     parser.add_argument("--multi-scale", action="store_true", help="vary imag-size +/- 50%")
     parser.add_argument("--single-cls", action="store_true", help="train as single-class dataset")
-    opt = parser.parse_args()
-    opt.weights = last if opt.resume else opt.weights
-    opt.cfg = glob.glob("./**/" + opt.cfg, recursive=True)[0]  # find file
-    opt.data = glob.glob("./**/" + opt.data, recursive=True)[0]  # find file
-    print(opt)
-    opt.imag_size.extend([opt.imag_size[-1]] * (2 - len(opt.imag_size)))  # extend to 2 sizes (train, test)
-    device = select_device(opt.device, apex=mixed_precision, batch_size=opt.batch_size)
+    args = parser.parse_args()
+    args.weights = last if args.resume else args.weights
+    args.cfg = glob.glob("./**/" + args.cfg, recursive=True)[0]  # find file
+    args.data = glob.glob("./**/" + args.data, recursive=True)[0]  # find file
+    print(args)
+    args.imag_size.extend([args.imag_size[-1]] * (2 - len(args.imag_size)))  # extend to 2 sizes (train, test)
+    device = select_device(args.device, apex=mixed_precision, batch_size=args.batch_size)
     # check_git_status()
     if device.type == "cpu":
         mixed_precision = False
 
     # Train
-    if not opt.evolve:
-        tb_writer = SummaryWriter(comment=opt.name)
+    if not args.evolve:
+        tb_writer = SummaryWriter(comment=args.name)
         print("Start Tensorboard with `tensorboard --logdir=runs`, view at http://localhost:6006/")
         train(hyp)
 
     # Evolve hyperparameters (optional)
     else:
         tb_writer = None
-        opt.notest, opt.nosave = True, True  # only test/save final epoch
-        if opt.bucket:
-            os.system("gsutil cp gs://%s/evolve.txt ." % opt.bucket)  # download evolve.txt if exists
+        args.notest, args.nosave = True, True  # only test/save final epoch
+        if args.bucket:
+            os.system("gsutil cp gs://%s/evolve.txt ." % args.bucket)  # download evolve.txt if exists
 
         for _ in range(10):  # generations to evolve
             if os.path.exists("evolve.txt"):  # if evolve.txt exists: select best hyps and mutate
@@ -457,7 +470,7 @@ if __name__ == "__main__":
             results = train(hyp.copy())
 
             # Write mutation results
-            print_mutation(hyp, results, opt.bucket)
+            print_mutation(hyp, results, args.bucket)
 
             # Plot results
             # plot_evolution_results(hyp)

@@ -1,3 +1,16 @@
+# Copyright 2020 Lorna Authors. All Rights Reserved.
+# Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
 import glob
 import math
 import os
@@ -19,7 +32,6 @@ import torch.backends.cudnn as cudnn
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
-import torchvision.models as models
 from scipy.signal import butter, filtfilt
 from tqdm import tqdm
 
@@ -45,13 +57,12 @@ def init_seeds(seed=0):
 
 
 def select_device(device="", apex=False, batch_size=None):
-    # device = "cpu" or "0" or "0,1,2,3"
-    cpu_request = device.lower() == "cpu"
-    if device and not cpu_request:  # if device requested other than "cpu"
+    only_cpu = device.lower() == "cpu"
+    if device and not only_cpu:  # if device requested other than "cpu"
         os.environ["CUDA_VISIBLE_DEVICES"] = device  # set environment variable
         assert torch.cuda.is_available(), "CUDA unavailable, invalid device %s requested" % device  # check availablity
 
-    cuda = False if cpu_request else torch.cuda.is_available()
+    cuda = False if only_cpu else torch.cuda.is_available()
     if cuda:
         c = 1024 ** 2  # bytes to MB
         ng = torch.cuda.device_count()
@@ -139,27 +150,6 @@ def model_info(model, verbose=False):
         fs = ""
 
     print("Model Summary: %g layers, %g parameters, %g gradients%s" % (len(list(model.parameters())), n_p, n_g, fs))
-
-
-def load_classifier(name="resnet101", classes=2):
-    # Loads a pretrained model reshaped to n-class output
-    model = models.__dict__[name](pretrained=True)
-
-    # Display model properties
-    input_size = [3, 224, 224]
-    input_space = "RGB"
-    input_range = [0, 1]
-    mean = [0.485, 0.456, 0.406]
-    std = [0.229, 0.224, 0.225]
-    for x in [input_size, input_space, input_range, mean, std]:
-        print(x + " =", eval(x))
-
-    # Reshape output to n classes
-    filters = model.fc.weight.shape[1]
-    model.fc.bias = torch.nn.Parameter(torch.zeros(classes), requires_grad=True)
-    model.fc.weight = torch.nn.Parameter(torch.zeros(classes, filters), requires_grad=True)
-    model.fc.out_features = classes
-    return model
 
 
 def scale_img(img, ratio=1.0, same_shape=False):  # img(16,3,256,416), r=ratio
@@ -868,7 +858,7 @@ def kmean_anchors(path="./data/coco128.txt", n=9, img_size=(640, 640), thr=0.20,
     # img_size: (min, max) image size used for multi-scale training (can be same values)
     # thr: IoU threshold hyperparameter used for training (0.0 - 1.0)
     # gen: generations to evolve anchors using genetic algorithm
-    from yolov4.utils import LoadImagesAndLabels
+    from .datasets import LoadImagesAndLabels
 
     def print_results(k):
         k = k[np.argsort(k.prod(1))]  # sort small to large
@@ -1082,7 +1072,7 @@ def plot_wh_methods():  # from utils.utils import *; plot_wh_methods()
     fig.savefig("comparison.png", dpi=200)
 
 
-def plot_images(images, targets, paths=None, fname="images.jpg", names=None, max_size=640, max_subplots=16):
+def plot_images(images, targets, paths=None, fname="images.png", names=None, max_size=640, max_subplots=16):
     tl = 3  # line thickness
     tf = max(tl - 1, 1)  # font thickness
     if os.path.isfile(fname):  # do not overwrite

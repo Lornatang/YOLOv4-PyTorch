@@ -39,17 +39,17 @@ def apply_classifier(x, model, image, raw_image):
 
             # Classes
             pred_cls1 = d[:, 5].long()
-            ims = []
+            images = []
             for j, a in enumerate(d):  # per item
                 cutout = raw_image[i][int(a[1]):int(a[3]), int(a[0]):int(a[2])]
-                im = cv2.resize(cutout, (224, 224))  # BGR
+                new_image = cv2.resize(cutout, (224, 224))  # BGR
 
-                im = im[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
-                im = np.ascontiguousarray(im, dtype=np.float32)  # uint8 to float32
-                im /= 255.0  # 0 - 255 to 0.0 - 1.0
-                ims.append(im)
+                new_image = new_image[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
+                new_image = np.ascontiguousarray(new_image, dtype=np.float32)  # uint8 to float32
+                new_image /= 255.0  # 0 - 255 to 0.0 - 1.0
+                images.append(new_image)
 
-            pred_cls2 = model(torch.Tensor(ims).to(d.device)).argmax(1)  # classifier prediction
+            pred_cls2 = model(torch.Tensor(images).to(d.device)).argmax(1)  # classifier prediction
             x[i] = x[i][pred_cls1 == pred_cls2]  # retain matching class detections
 
     return x

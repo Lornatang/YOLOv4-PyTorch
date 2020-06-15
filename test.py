@@ -1,14 +1,30 @@
+# Copyright 2020 Lorna Authors. All Rights Reserved.
+# Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
 import argparse
 import json
 
 import yaml
 from torch.utils.data import DataLoader
+import numpy as np
 
-from yolov4.utils import *
+from yolov4_pytorch import *
+from pathlib import Path
 import os
 import glob
 import torch.nn as nn
 import torch
+from tqdm import tqdm
 
 
 def test(data,
@@ -29,7 +45,7 @@ def test(data,
         device = select_device(opt.device, batch_size=batch_size)
 
         # Remove previous
-        for f in glob.glob('test_batch*.jpg'):
+        for f in glob.glob('test_batch*.png'):
             os.remove(f)
 
         # Load model
@@ -234,7 +250,7 @@ def test(data,
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='test.py')
-    parser.add_argument('--weights', type=str, default='weights/yolov5s.pth', help='model.pt path')
+    parser.add_argument('--weights', type=str, default='weights/yolov5s.pth', help='model.pth path')
     parser.add_argument('--data', type=str, default='data/coco.yaml', help='*.data path')
     parser.add_argument('--batch-size', type=int, default=32, help='size of each image batch')
     parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
@@ -265,7 +281,7 @@ if __name__ == '__main__':
              opt.augment)
 
     elif opt.task == 'study':  # run over a range of settings and save/plot
-        for weights in ['yolov5s.pt', 'yolov5m.pt', 'yolov5l.pt', 'yolov5x.pt']:
+        for weights in ['yolov5s.pth', 'yolov5m.pth', 'yolov5l.pth', 'yolov5x.pth']:
             f = 'study_%s_%s.txt' % (Path(opt.data).stem, Path(weights).stem)  # filename to save to
             x = list(range(288, 896, 64))  # x axis
             y = []  # y axis
