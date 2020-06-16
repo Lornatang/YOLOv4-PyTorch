@@ -89,7 +89,8 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 
 ##### Common Settings for VOC Models
 * All VOC models were trained on `voc2007_trainval` + `voc2012_trainval` and evaluated on `voc2007_test`.
-* The default settings are __not directly comparable__ with Detectron's standard settings.
+* The default settings are __not directly comparable__ with YOLOv4's standard settings. The default settings are __not directly comparable__ with Detectron's standard settings.
+  For example, our default training data augmentation uses scale jittering in addition to horizontal flipping.
 * For YOLOv3/YOLOv4, we provide baselines based on __3 different backbone combinations__:
   * __Darknet-53__: Use a ResNet+VGG backbone with standard conv and FC heads for mask and box prediction,
     respectively. 
@@ -190,7 +191,9 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 </tbody></table>
 
 ##### Common Settings for COCO Models
-* All COCO models were trained on `train2017` and evaluated on `val2017`.* The default settings are __not directly comparable__ with Detectron's standard settings.
+* All COCO models were trained on `train2017` and evaluated on `val2017`. 
+* The default settings are __not directly comparable__ with YOLOv4's standard settings. The default settings are __not directly comparable__ with Detectron's standard settings.
+  For example, our default training data augmentation uses scale jittering in addition to horizontal flipping.
 * For YOLOv3/YOLOv4, we provide baselines based on __3 different backbone combinations__:
   * __Darknet-53__: Use a ResNet+VGG backbone with standard conv and FC heads for mask and box prediction,
     respectively. 
