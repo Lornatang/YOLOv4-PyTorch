@@ -164,6 +164,11 @@ data/coco2014.yaml
 data/coco2017/
 data/coco2017.yaml
 
+# Dataset compressed file
+*.tgz
+*.zip
+*.tar
+
 # Custom video dir
 video/
 
