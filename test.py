@@ -77,7 +77,8 @@ def evaluate(config_file,
                    "num_classes"] == num_classes, f"{args.data} num classes={num_classes} classes but {config_file} classes={config_file['num_classes']} classes "
 
         # Load model
-        model.load_state_dict(torch.load(weights, map_location=device)["state_dict"].float())
+        model.load_state_dict(torch.load(weights, map_location=device)["state_dict"])
+        model.float()
         model_info(model)
         model.fuse()
         model.to(device)
