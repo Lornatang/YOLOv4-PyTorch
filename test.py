@@ -111,10 +111,9 @@ def evaluate(config_file,
                                       single_cls=args.single_cls,  # single class mode
                                       pad=0.5)  # padding
         batch_size = min(batch_size, len(dataset))
-        nw = min([os.cpu_count(), batch_size if batch_size > 1 else 0, 8])  # number of workers
         dataloader = DataLoader(dataset,
                                 batch_size=batch_size,
-                                num_workers=nw,
+                                num_workers=args.workers,
                                 pin_memory=True,
                                 collate_fn=dataset.collate_fn)
 
