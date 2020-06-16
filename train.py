@@ -327,7 +327,7 @@ def train(parameters):
                                             model=ema.ema,
                                             single_cls=args.single_cls,
                                             dataloader=test_dataloader,
-                                            fast=ni < n_burn)
+                                            fast=epoch < epochs / 2)
 
         # Write
         with open("results.txt", "a") as f:
