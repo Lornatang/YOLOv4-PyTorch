@@ -99,7 +99,7 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
   * __GhostDarknet-53__ : Use a ResNet+Ghost backbone with standard conv and FC heads for mask and box prediction,
     respectively. 
     
-**Pascal VOC Object Detection Baselines**
+##### Pascal VOC Object Detection Baselines
 
 <table><tbody>
 <!-- START TABLE -->
@@ -200,7 +200,7 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
   * __GhostDarknet-53__ : Use a ResNet+Ghost backbone with standard conv and FC heads for mask and box prediction,
     respectively. 
     
-**COCO Object Detection Baselines**
+##### COCO Object Detection Baselines
 
 <table><tbody>
 <!-- START TABLE -->
