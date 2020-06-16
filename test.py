@@ -96,7 +96,7 @@ def evaluate(config_file,
     # Configure run
     with open(data) as filename:
         data = yaml.load(filename, Loader=yaml.FullLoader)  # model dict
-    nc = 1 if single_cls else int(data['classes'])  # number of classes
+    classes = 1 if single_cls else int(data['classes'])  # number of classes
     iouv = torch.linspace(0.5, 0.95, 10).to(device)  # iou vector for mAP@0.5:0.95
     niou = iouv.numel()
 
@@ -224,7 +224,7 @@ def evaluate(config_file,
         p, r, ap, f1, ap_class = ap_per_class(*stats)
         p, r, ap50, ap = p[:, 0], r[:, 0], ap[:, 0], ap.mean(1)  # [P, R, AP@0.5, AP@0.5:0.95]
         mp, mr, map50, map = p.mean(), r.mean(), ap50.mean(), ap.mean()
-        nt = np.bincount(stats[3].astype(np.int64), minlength=nc)  # number of targets per class
+        nt = np.bincount(stats[3].astype(np.int64), minlength=classes)  # number of targets per class
     else:
         nt = torch.zeros(1)
 
@@ -233,7 +233,7 @@ def evaluate(config_file,
     print(pf % ('all', seen, nt.sum(), mp, mr, map50, map))
 
     # Print results per class
-    if verbose and nc > 1 and len(stats):
+    if verbose and classes > 1 and len(stats):
         for i, c in enumerate(ap_class):
             print(pf % (names[c], seen, nt[c], p[i], r[i], ap50[i], ap[i]))
 
@@ -270,7 +270,7 @@ def evaluate(config_file,
                   'See https://github.com/cocodataset/cocoapi/issues/356')
 
     # Return results
-    maps = np.zeros(nc) + map
+    maps = np.zeros(classes) + map
     for i, c in enumerate(ap_class):
         maps[c] = ap[i]
     return (mp, mr, map50, map, *(loss.cpu() / len(dataloader)).tolist()), maps, t
