@@ -137,10 +137,32 @@ results.txt
 train_batch_*.png
 test_batch_*.png
 labels.png
+results.png
 
 # Custom dataset dir
 data/masked/
 data/masked.yaml
+
+data/safety_hat/
+data/safety_hat.yaml
+
+data/voc2007/
+data/voc2007.yaml
+
+data/voc2012/
+data/voc2012.yaml
+
+data/voc2014/
+data/voc2014.yaml
+
+data/voc2017/
+data/voc2017.yaml
+
+data/coco2014/
+data/coco2014.yaml
+
+data/coco2017/
+data/coco2017.yaml
 
 # Custom video dir
 video/
