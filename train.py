@@ -391,7 +391,7 @@ if __name__ == "__main__":
     parser.add_argument("--workers", default=8, type=int, metavar="N",
                         help="Number of data loading workers (default: 8)")
     parser.add_argument("--multi-scale", action="store_true",
-                        help="adjust (67% - 150%) img_size every 10 batches")
+                        help="adjust (67%% - 150%%) img_size every 10 batches")
     parser.add_argument("--image-size", nargs="+", type=int, default=[640, 640],
                         help="Size of processing picture. (default: [640, 640])")
     parser.add_argument("--rect", action="store_true",
