@@ -143,7 +143,7 @@ def train(parameters):
                                         model.state_dict()[k].shape == v.shape}
             model.load_state_dict(checkpoint["state_dict"], strict=False)
         except KeyError as e:
-            s = f"{args.weights} is not compatible with {args.config_file}. Specify --weights '' or specify a " \
+            s = f"{args.weights} is not compatible with {args.config_file}. Specify --weights "" or specify a " \
                 f"--config-file compatible with {args.weights}. "
             raise KeyError(s) from e
 
@@ -193,7 +193,7 @@ def train(parameters):
     collate_fn = train_dataset.collate_fn
 
     max_class = np.concatenate(train_dataset.labels, 0)[:, 0].max()
-    assert max_class < classes, f"Label class {max_class} exceeds nc={classes} in {args.config_file}. Correct your labels or your model."
+    assert max_class < classes, f"Label class {max_class} exceeds classes={classes} in {args.config_file}. Correct your labels or your model."
 
     # Dataloader
     train_dataloader = torch.utils.data.DataLoader(train_dataset,
@@ -219,9 +219,9 @@ def train(parameters):
 
     # class frequency
     labels = np.concatenate(train_dataset.labels, 0)
-    c = torch.tensor(labels[:, 0])  # classes
+    classes = torch.tensor(labels[:, 0])  # classes
     plot_labels(labels)
-    tb_writer.add_histogram("classes", c, 0)
+    tb_writer.add_histogram("classes", classes, 0)
 
     # Exponential moving average
     ema = ModelEMA(model)
@@ -229,7 +229,7 @@ def train(parameters):
     # Start training
     t0 = time.time()
     nb = len(train_dataloader)  # number of batches
-    n_burn = max(3 * nb, 1e3)  # burn-in iterations, max(3 epochs, 1k iterations)
+    n_burn = max(3 * nb, 1000)  # burn-in iterations, max(3 epochs, 1k iterations)
     maps = np.zeros(classes)  # mAP per class
     # "P", "R", "mAP", "F1", "val GIoU", "val Objectness", "val Classification"
     results = (0, 0, 0, 0, 0, 0, 0)
