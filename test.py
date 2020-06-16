@@ -63,7 +63,7 @@ def evaluate(config_file,
         device = select_device(args.device, batch_size=batch_size)
 
         # Remove previous
-        for filename in glob.glob('test_batch_*.png'):
+        for filename in glob.glob("test_batch_*.png"):
             os.remove(filename)
 
         # Configure
@@ -83,28 +83,28 @@ def evaluate(config_file,
         model.fuse()
         model.to(device)
 
-        if device.type != 'cpu' and torch.cuda.device_count() > 1:
+        if device.type != "cpu" and torch.cuda.device_count() > 1:
             model = nn.DataParallel(model)
 
     else:  # called by train.py
         training = True
         device = next(model.parameters()).device  # get model device
 
-        half = device.type != 'cpu'  # half precision only supported on CUDA
+        half = device.type != "cpu"  # half precision only supported on CUDA
         if half:
             model.half()  # to FP16
 
     # Configure run
     with open(data) as filename:
         data = yaml.load(filename, Loader=yaml.FullLoader)  # model dict
-    num_classes = 1 if single_cls else int(data['num_classes'])  # number of classes
+    num_classes = 1 if single_cls else int(data["num_classes"])  # number of classes
     iouv = torch.linspace(0.5, 0.95, 10).to(device)  # iou vector for mAP@0.5:0.95
     niou = iouv.numel()
 
     # Dataloader
     if dataloader is None:
         fast |= confidence_threshold > 0.001  # enable fast mode
-        path = data['test'] if args.task == 'test' else data['val']  # path to val/test images
+        path = data["test"] if args.task == "test" else data["val"]  # path to val/test images
         dataset = LoadImagesAndLabels(path,
                                       image_size,
                                       batch_size,
@@ -120,10 +120,10 @@ def evaluate(config_file,
 
     seen = 0
     model.eval()
-    _ = model(torch.zeros((1, 3, image_size, image_size), device=device)) if device.type != 'cpu' else None  # run once
-    names = model.names if hasattr(model, 'names') else model.module.names
+    _ = model(torch.zeros((1, 3, image_size, image_size), device=device)) if device.type != "cpu" else None  # run once
+    names = model.names if hasattr(model, "names") else model.module.names
     coco91class = coco80_to_coco91_class()
-    s = ('%20s' + '%12s' * 6) % ('Class', 'Images', 'Targets', 'P', 'R', 'mAP@.5', 'mAP@.5:.95')
+    s = ("%20s" + "%12s" * 6) % ("Class", "Images", "Targets", "P", "R", "mAP@.5", "mAP@.5:.95")
     p, r, f1, mp, mr, map50, map, t0, t1 = 0., 0., 0., 0., 0., 0., 0., 0., 0.
     loss = torch.zeros(3, device=device)
     jdict, stats, ap, ap_class = [], [], [], []
@@ -170,16 +170,16 @@ def evaluate(config_file,
             # Append to pycocotools JSON dictionary
             if save_json:
                 # [{"image_id": 42, "category_id": 18, "bbox": [258.15, 41.29, 348.26, 243.78], "score": 0.236}, ...
-                image_id = int(Path(paths[si]).stem.split('_')[-1])
+                image_id = int(Path(paths[si]).stem.split("_")[-1])
                 box = pred[:, :4].clone()  # xyxy
                 scale_coords(images[si].shape[1:], box, shapes[si][0], shapes[si][1])  # to original shape
                 box = xyxy2xywh(box)  # xywh
                 box[:, :2] -= box[:, 2:] / 2  # xy center to top-left corner
                 for p, b in zip(pred.tolist(), box.tolist()):
-                    jdict.append({'image_id': image_id,
-                                  'category_id': coco91class[int(p[5])],
-                                  'bbox': [round(x, 3) for x in b],
-                                  'score': round(p[4], 5)})
+                    jdict.append({"image_id": image_id,
+                                  "category_id": coco91class[int(p[5])],
+                                  "bbox": [round(x, 3) for x in b],
+                                  "score": round(p[4], 5)})
 
             # Assign all predictions as incorrect
             correct = torch.zeros(pred.shape[0], niou, dtype=torch.bool, device=device)
@@ -214,9 +214,9 @@ def evaluate(config_file,
 
         # Plot images
         if batch_i < 1:
-            filename = f'test_batch_{batch_i}_gt.png'  # filename
+            filename = f"test_batch_{batch_i}_gt.png"  # filename
             plot_images(images, targets, paths, filename, names)  # ground truth
-            filename = f'test_batch_{batch_i}_pred.png'
+            filename = f"test_batch_{batch_i}_pred.png"
             plot_images(images, output_to_target(output, width, height), paths, filename, names)  # predictions
 
     # Compute statistics
@@ -230,8 +230,8 @@ def evaluate(config_file,
         nt = torch.zeros(1)
 
     # Print results
-    pf = '%20s' + '%12.3g' * 6  # print format
-    print(pf % ('all', seen, nt.sum(), mp, mr, map50, map))
+    pf = "%20s" + "%12.3g" * 6  # print format
+    print(pf % ("all", seen, nt.sum(), mp, mr, map50, map))
 
     # Print results per class
     if verbose and num_classes > 1 and len(stats):
@@ -241,14 +241,14 @@ def evaluate(config_file,
     # Print speeds
     t = tuple(x / seen * 1E3 for x in (t0, t1, t0 + t1)) + (image_size, image_size, batch_size)  # tuple
     if not training:
-        print('Speed: %.1f/%.1f/%.1f ms inference/NMS/total per %gx%g image at batch-size %g' % t)
+        print("Speed: %.1f/%.1f/%.1f ms inference/NMS/total per %gx%g image at batch-size %g" % t)
 
     # Save JSON
     if save_json and map50 and len(jdict):
-        imgIds = [int(Path(x).stem.split('_')[-1]) for x in dataloader.dataset.image_files]
-        filename = f"detections_val2017_{(weights.split(os.sep)[-1].replace('.pt', '') if weights else '')}_results.json"
-        print('\nCOCO mAP with pycocotools... saving %s...' % filename)
-        with open(filename, 'w') as file:
+        imgIds = [int(Path(x).stem.split("_")[-1]) for x in dataloader.dataset.image_files]
+        filename = f"detections_val2017_{(weights.split(os.sep)[-1].replace('.pth', '') if weights else '')}_results.json"
+        print("\nCOCO mAP with pycocotools... saving %s..." % filename)
+        with open(filename, "w") as file:
             json.dump(jdict, file)
 
         try:
@@ -257,18 +257,18 @@ def evaluate(config_file,
 
             # https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocoEvalDemo.ipynb
             cocoGt = COCO(
-                glob.glob('data/COCO-Detection/annotations/instances_val*.json')[0])  # initialize COCO ground truth api
+                glob.glob("data/COCO-Detection/annotations/instances_val*.json")[0])  # initialize COCO ground truth api
             cocoDt = cocoGt.loadRes(filename)  # initialize COCO pred api
 
-            cocoEval = COCOeval(cocoGt, cocoDt, 'bbox')
+            cocoEval = COCOeval(cocoGt, cocoDt, "bbox")
             cocoEval.params.imgIds = imgIds  # [:32]  # only evaluate these images
             cocoEval.evaluate()
             cocoEval.accumulate()
             cocoEval.summarize()
             map, map50 = cocoEval.stats[:2]  # update to pycocotools results (mAP@0.5:0.95, mAP@0.5)
         except:
-            print('WARNING: pycocotools must be installed with numpy==1.17 to run correctly. '
-                  'See https://github.com/cocodataset/cocoapi/issues/356')
+            print("WARNING: pycocotools must be installed with numpy==1.17 to run correctly. "
+                  "See https://github.com/cocodataset/cocoapi/issues/356")
 
     # Return results
     maps = np.zeros(num_classes) + map
@@ -277,7 +277,7 @@ def evaluate(config_file,
     return (mp, mr, map50, map, *(loss.cpu() / len(dataloader)).tolist()), maps, t
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config-file", type=str, default="configs/COCO-Detection/yolov5s.yaml",
                         help="Neural network profile path. (default: `configs/COCO-Detection/yolov5s.yaml`)")
@@ -301,15 +301,15 @@ if __name__ == '__main__':
                         help="save a cocoapi-compatible JSON results file")
     parser.add_argument("--single-cls", action="store_true", help="train as single-class dataset")
     parser.add_argument("--augment", action="store_true", help="augmented for testing")
-    parser.add_argument('--verbose', action='store_true', help='report mAP by class')
+    parser.add_argument("--verbose", action="store_true", help="report mAP by class")
 
     args = parser.parse_args()
     args.image_size = check_image_size(args.image_size)
-    args.save_json = args.save_json or args.data.endswith('coco2014.yaml') or args.data.endswith('coco2017.yaml')
+    args.save_json = args.save_json or args.data.endswith("coco2014.yaml") or args.data.endswith("coco2017.yaml")
     print(args)
 
-    # task = 'val', 'test', 'study'
-    if args.task in ['eval', 'test']:  # (default) run normally
+    # task = "val", "test", "study"
+    if args.task in ["eval", "test"]:  # (default) run normally
         evaluate(args.config_file,
                  args.data,
                  args.weights,
@@ -321,15 +321,15 @@ if __name__ == '__main__':
                  args.single_cls,
                  args.augment)
 
-    elif args.task == 'study':  # run over a range of settings and save/plot
-        for weights in ['yolov5s.pth', 'yolov5m.pth', 'yolov5l.pth', 'yolov5x.pth']:
-            f = 'study_%s_%s.txt' % (Path(args.data).stem, Path(weights).stem)  # filename to save to
+    elif args.task == "study":  # run over a range of settings and save/plot
+        for weights in ["yolov5s.pth", "yolov5m.pth", "yolov5l.pth", "yolov5x.pth"]:
+            f = "study_%s_%s.txt" % (Path(args.data).stem, Path(weights).stem)  # filename to save to
             x = list(range(288, 896, 64))  # x axis
             y = []  # y axis
             for i in x:  # image-size
-                print('\nRunning %s point %s...' % (f, i))
+                print("\nRunning %s point %s..." % (f, i))
                 r, _, t = evaluate(args.data, weights, args.batch_size, i, args.confidence_threshold,
                                    args.iou_threshold, args.save_json)
                 y.append(r + t)  # results and times
-            np.savetxt(f, y, fmt='%10.4g')  # save
-        os.system('zip -r study.zip study_*.txt')
+            np.savetxt(f, y, fmt="%10.4g")  # save
+        os.system("zip -r study.zip study_*.txt")
