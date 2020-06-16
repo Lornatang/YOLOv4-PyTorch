@@ -37,7 +37,7 @@ def create(name, pretrained, channels, classes):
     model = YOLO(f'configs/{name}.yaml', channels, classes)
     if pretrained:
         state_dict = torch.load(f'{name}.pth')['state_dict']
-        state_dict = {k: v for k, v in state_dict.items() if model.state_dict()[k].numel() == v.numel()}  # filter
+        state_dict = {k: v for k, v in state_dict.float().items() if model.state_dict()[k].shape == v.shape}  # filter
         model.load_state_dict(state_dict, strict=False)  # load
     return model
 

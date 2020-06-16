@@ -58,7 +58,7 @@ def detect(save_image=False):
     model = YOLO(args.config_file).to(device)
 
     # Load weight
-    model.load_state_dict(torch.load(weights, map_location=device)["state_dict"])
+    model.load_state_dict(torch.load(weights, map_location=device)["state_dict"].float())
     model.eval()
 
     # Second-stage classifier

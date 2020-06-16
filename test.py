@@ -59,6 +59,7 @@ def evaluate(config_file,
              verbose=False):  # 0 fast, 1 accurate
     # Initialize/load model and set device
     if model is None:
+        training = False
         device = select_device(args.device, batch_size=batch_size)
 
         # Remove previous
@@ -76,18 +77,21 @@ def evaluate(config_file,
                    "classes"] == classes, f"{args.data} classes={classes} classes but {config_file} classes={config_file['classes']} classes "
 
         # Load model
-        model.load_state_dict(torch.load(weights, map_location=device)["state_dict"])
+        model.load_state_dict(torch.load(weights, map_location=device)["state_dict"].float())
         model_info(model)
-        # model.fuse()
+        model.fuse()
         model.to(device)
 
         if device.type != 'cpu' and torch.cuda.device_count() > 1:
             model = nn.DataParallel(model)
 
-        training = False
     else:  # called by train.py
-        device = next(model.parameters()).device  # get model device
         training = True
+        device = next(model.parameters()).device  # get model device
+
+        half = device.type != 'cpu'  # half precision only supported on CUDA
+        if half:
+            model.half()  # to FP16
 
     # Configure run
     with open(data) as filename:
@@ -105,7 +109,7 @@ def evaluate(config_file,
                                       batch_size,
                                       rect=True,  # rectangular inference
                                       single_cls=args.single_cls,  # single class mode
-                                      pad=0.0 if fast else 0.5)  # padding
+                                      pad=0.5)  # padding
         batch_size = min(batch_size, len(dataset))
         nw = min([os.cpu_count(), batch_size if batch_size > 1 else 0, 8])  # number of workers
         dataloader = DataLoader(dataset,
@@ -138,7 +142,7 @@ def evaluate(config_file,
 
             # Compute loss
             if training:  # if model has loss hyperparameters
-                loss += compute_loss(train_out, targets, model)[1][:3]  # GIoU, obj, cls
+                loss += compute_loss([x.float() for x in train_out], targets, model)[1][:3]  # GIoU, obj, cls
 
             # Run NMS
             t = time_synchronized()

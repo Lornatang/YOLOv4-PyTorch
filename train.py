@@ -139,8 +139,8 @@ def train(parameters):
 
         # load model
         try:
-            checkpoint["state_dict"] = {k: v for k, v in checkpoint["state_dict"].items() if
-                                        model.state_dict()[k].numel() == v.numel()}
+            checkpoint["state_dict"] = {k: v for k, v in checkpoint["state_dict"].float().items() if
+                                        model.state_dict()[k].shape == v.shape}
             model.load_state_dict(checkpoint["state_dict"], strict=False)
         except KeyError as e:
             s = f"{args.weights} is not compatible with {args.config_file}. Specify --weights '' or specify a " \
