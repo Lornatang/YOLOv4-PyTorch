@@ -94,9 +94,10 @@ def train(parameters):
     init_seeds(1)
     with open(args.data) as data_file:
         data_dict = yaml.load(data_file, Loader=yaml.FullLoader)  # model dict
+        print(data_dict)
     train_path = data_dict["train"]
     test_path = data_dict["val"]
-    classes = 1 if args.single_cls else int(data_dict["classes"])  # number of classes
+    num_classes = 1 if args.single_cls else int(data_dict["num_classes"])  # number of classes
 
     # Remove previous results
     for old_file in glob.glob("*_batch_*.png") + glob.glob("result.txt"):
@@ -105,7 +106,7 @@ def train(parameters):
     # Create model
     model = YOLO(args.config_file).to(device)
     assert model.config_file[
-               "classes"] == classes, f"{args.data} nc={classes} classes but {args.config_file} classes={model.config_file['classes']} classes "
+               "num_classes"] == num_classes, f"{args.data} classes={num_classes} classes but {args.config_file} classes={model.config_file['num_classes']} classes "
 
     # Image sizes
     gs = int(max(model.stride))  # grid size (max stride)
@@ -193,7 +194,7 @@ def train(parameters):
     collate_fn = train_dataset.collate_fn
 
     max_class = np.concatenate(train_dataset.labels, 0)[:, 0].max()
-    assert max_class < classes, f"Label class {max_class} exceeds classes={classes} in {args.config_file}. Correct your labels or your model."
+    assert max_class < num_classes, f"Label class {max_class} exceeds classes={num_classes} in {args.config_file}. Correct your labels or your model."
 
     # Dataloader
     train_dataloader = torch.utils.data.DataLoader(train_dataset,
@@ -210,11 +211,11 @@ def train(parameters):
                                                   collate_fn=collate_fn)
 
     # Model parameters
-    parameters["classes"] *= classes / 80.  # scale COCO-Detection-tuned parameters["classes"] to current dataset
-    model.classes = classes  # attach number of classes to model
+    parameters["classes"] *= num_classes / 80.
+    model.num_classes = num_classes  # attach number of classes to model
     model.hyper_parameters = parameters  # attach hyper parameters to model
     model.gr = 1.0  # giou loss ratio (obj_loss = 1.0 or giou)
-    model.class_weights = labels_to_class_weights(train_dataset.labels, classes).to(device)  # attach class weights
+    model.class_weights = labels_to_class_weights(train_dataset.labels, num_classes).to(device)  # attach class weights
     model.names = data_dict["names"]
 
     # class frequency
@@ -230,7 +231,7 @@ def train(parameters):
     t0 = time.time()
     nb = len(train_dataloader)  # number of batches
     n_burn = max(3 * nb, 1000)  # burn-in iterations, max(3 epochs, 1k iterations)
-    maps = np.zeros(classes)  # mAP per class
+    maps = np.zeros(num_classes)  # mAP per class
     # "P", "R", "mAP", "F1", "val GIoU", "val Objectness", "val Classification"
     results = (0, 0, 0, 0, 0, 0, 0)
     print(f"Image sizes {image_size} train, {image_size_test} test")
@@ -243,7 +244,7 @@ def train(parameters):
         # Update image weights (optional)
         if train_dataset.image_weights:
             w = model.class_weights.cpu().numpy() * (1 - maps) ** 2  # class weights
-            image_weights = labels_to_image_weights(train_dataset.labels, num_classes=classes, class_weights=w)
+            image_weights = labels_to_image_weights(train_dataset.labels, num_classes=num_classes, class_weights=w)
             train_dataset.indices = random.choices(range(train_dataset.image_files_num), weights=image_weights,
                                                    k=train_dataset.image_files_num)  # rand weighted idx
 

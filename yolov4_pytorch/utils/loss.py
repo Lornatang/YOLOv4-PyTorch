@@ -68,7 +68,7 @@ def build_targets(p, targets, model):
     # Build targets for compute_loss(), input targets(image,class,x,y,w,h)
     det = model.module.model[-1] if type(model) in (nn.parallel.DataParallel, nn.parallel.DistributedDataParallel) \
         else model.model[-1]  # Detect() module
-    na, nt = det.na, targets.shape[0]  # number of anchors, targets
+    na, nt = det.num_anchors, targets.shape[0]  # number of anchors, targets
     tcls, tbox, indices, anch = [], [], [], []
     gain = torch.ones(6, device=targets.device)  # normalized to gridspace gain
     off = torch.tensor([[1, 0], [0, 1], [-1, 0], [0, -1]], device=targets.device).float()  # overlap offsets
@@ -160,7 +160,7 @@ def compute_loss(p, targets, model):  # predictions, targets, model
             tobj[b, a, gj, gi] = (1.0 - model.gr) + model.gr * giou.detach().clamp(0).type(tobj.dtype)  # giou ratio
 
             # Class
-            if model.classes > 1:  # cls loss (only if multiple classes)
+            if model.num_classes > 1:  # cls loss (only if multiple classes)
                 t = torch.full_like(ps[:, 5:], cn)  # targets
                 t[range(nb), tcls[i]] = cp
                 lcls += BCEcls(ps[:, 5:], t)  # BCE
@@ -179,7 +179,7 @@ def compute_loss(p, targets, model):  # predictions, targets, model
         g = 3.0  # loss gain
         lobj *= g / bs
         if nt:
-            lcls *= g / nt / model.nc
+            lcls *= g / nt / model.num_classes
             lbox *= g / nt
 
     loss = lbox + lobj + lcls

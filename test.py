@@ -69,12 +69,12 @@ def evaluate(config_file,
         # Configure
         with open(args.data) as data_file:
             data_dict = yaml.load(data_file, Loader=yaml.FullLoader)  # model dict
-        classes = 1 if args.single_cls else int(data_dict["classes"])  # number of classes
+        num_classes = 1 if args.single_cls else int(data_dict["num_classes"])  # number of classes
 
         # Create model
         model = YOLO(config_file).to(device)
         assert model.config_file[
-                   "classes"] == classes, f"{args.data} classes={classes} classes but {config_file} classes={config_file['classes']} classes "
+                   "num_classes"] == num_classes, f"{args.data} num classes={num_classes} classes but {config_file} classes={config_file['num_classes']} classes "
 
         # Load model
         model.load_state_dict(torch.load(weights, map_location=device)["state_dict"].float())
@@ -96,7 +96,7 @@ def evaluate(config_file,
     # Configure run
     with open(data) as filename:
         data = yaml.load(filename, Loader=yaml.FullLoader)  # model dict
-    classes = 1 if single_cls else int(data['classes'])  # number of classes
+    num_classes = 1 if single_cls else int(data['num_classes'])  # number of classes
     iouv = torch.linspace(0.5, 0.95, 10).to(device)  # iou vector for mAP@0.5:0.95
     niou = iouv.numel()
 
@@ -126,17 +126,17 @@ def evaluate(config_file,
     p, r, f1, mp, mr, map50, map, t0, t1 = 0., 0., 0., 0., 0., 0., 0., 0., 0.
     loss = torch.zeros(3, device=device)
     jdict, stats, ap, ap_class = [], [], [], []
-    for batch_i, (imgs, targets, paths, shapes) in enumerate(tqdm(dataloader, desc=s)):
-        imgs = imgs.to(device).float() / 255.0  # uint8 to float32, 0 - 255 to 0.0 - 1.0
+    for batch_i, (images, targets, paths, shapes) in enumerate(tqdm(dataloader, desc=s)):
+        images = images.to(device).float() / 255.0  # uint8 to float32, 0 - 255 to 0.0 - 1.0
         targets = targets.to(device)
-        nb, _, height, width = imgs.shape  # batch size, channels, height, width
+        nb, _, height, width = images.shape  # batch size, channels, height, width
         whwh = torch.Tensor([width, height, width, height]).to(device)
 
         # Disable gradients
         with torch.no_grad():
             # Run model
             t = time_synchronized()
-            inf_out, train_out = model(imgs, augment=augment)  # inference and training outputs
+            inf_out, train_out = model(images, augment=augment)  # inference and training outputs
             t0 += time_synchronized() - t
 
             # Compute loss
@@ -171,7 +171,7 @@ def evaluate(config_file,
                 # [{"image_id": 42, "category_id": 18, "bbox": [258.15, 41.29, 348.26, 243.78], "score": 0.236}, ...
                 image_id = int(Path(paths[si]).stem.split('_')[-1])
                 box = pred[:, :4].clone()  # xyxy
-                scale_coords(imgs[si].shape[1:], box, shapes[si][0], shapes[si][1])  # to original shape
+                scale_coords(images[si].shape[1:], box, shapes[si][0], shapes[si][1])  # to original shape
                 box = xyxy2xywh(box)  # xywh
                 box[:, :2] -= box[:, 2:] / 2  # xy center to top-left corner
                 for p, b in zip(pred.tolist(), box.tolist()):
@@ -214,9 +214,9 @@ def evaluate(config_file,
         # Plot images
         if batch_i < 1:
             filename = f'test_batch_{batch_i}_gt.png'  # filename
-            plot_images(imgs, targets, paths, filename, names)  # ground truth
+            plot_images(images, targets, paths, filename, names)  # ground truth
             filename = f'test_batch_{batch_i}_pred.png'
-            plot_images(imgs, output_to_target(output, width, height), paths, filename, names)  # predictions
+            plot_images(images, output_to_target(output, width, height), paths, filename, names)  # predictions
 
     # Compute statistics
     stats = [np.concatenate(x, 0) for x in zip(*stats)]  # to numpy
@@ -224,7 +224,7 @@ def evaluate(config_file,
         p, r, ap, f1, ap_class = ap_per_class(*stats)
         p, r, ap50, ap = p[:, 0], r[:, 0], ap[:, 0], ap.mean(1)  # [P, R, AP@0.5, AP@0.5:0.95]
         mp, mr, map50, map = p.mean(), r.mean(), ap50.mean(), ap.mean()
-        nt = np.bincount(stats[3].astype(np.int64), minlength=classes)  # number of targets per class
+        nt = np.bincount(stats[3].astype(np.int64), minlength=num_classes)  # number of targets per class
     else:
         nt = torch.zeros(1)
 
@@ -233,7 +233,7 @@ def evaluate(config_file,
     print(pf % ('all', seen, nt.sum(), mp, mr, map50, map))
 
     # Print results per class
-    if verbose and classes > 1 and len(stats):
+    if verbose and num_classes > 1 and len(stats):
         for i, c in enumerate(ap_class):
             print(pf % (names[c], seen, nt[c], p[i], r[i], ap50[i], ap[i]))
 
@@ -270,7 +270,7 @@ def evaluate(config_file,
                   'See https://github.com/cocodataset/cocoapi/issues/356')
 
     # Return results
-    maps = np.zeros(classes) + map
+    maps = np.zeros(num_classes) + map
     for i, c in enumerate(ap_class):
         maps[c] = ap[i]
     return (mp, mr, map50, map, *(loss.cpu() / len(dataloader)).tolist()), maps, t
@@ -325,10 +325,10 @@ if __name__ == '__main__':
             f = 'study_%s_%s.txt' % (Path(args.data).stem, Path(weights).stem)  # filename to save to
             x = list(range(288, 896, 64))  # x axis
             y = []  # y axis
-            for i in x:  # img-size
+            for i in x:  # image-size
                 print('\nRunning %s point %s...' % (f, i))
-                r, _, t = evaluate(args.data, weights, args.batch_size, i, args.conf_thres, args.iou_thres,
-                                   args.save_json)
+                r, _, t = evaluate(args.data, weights, args.batch_size, i, args.confidence_threshold,
+                                   args.iou_threshold, args.save_json)
                 y.append(r + t)  # results and times
             np.savetxt(f, y, fmt='%10.4g')  # save
         os.system('zip -r study.zip study_*.txt')

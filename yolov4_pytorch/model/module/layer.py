@@ -35,13 +35,13 @@ from ...utils.weights import initialize_weights
 
 
 class Detect(nn.Module):
-    def __init__(self, nc=80, anchors=()):  # detection layer
+    def __init__(self, num_classes=80, anchors=()):  # detection layer
         super(Detect, self).__init__()
         self.stride = None  # strides computed during build
-        self.nc = nc  # number of classes
-        self.no = nc + 5  # number of outputs per anchor
+        self.num_classes = num_classes  # number of classes
+        self.no = num_classes + 5  # number of outputs per anchor
         self.nl = len(anchors)  # number of detection layers
-        self.na = len(anchors[0]) // 2  # number of anchors
+        self.num_anchors = len(anchors[0]) // 2  # number of anchors
         self.grid = [torch.zeros(1)] * self.nl  # init grid
         a = torch.tensor(anchors).float().view(self.nl, -1, 2)
         self.register_buffer('anchors', a)  # shape(nl,na,2)
@@ -54,7 +54,7 @@ class Detect(nn.Module):
         self.training |= self.export
         for i in range(self.nl):
             bs, _, ny, nx = x[i].shape  # x(bs,255,20,20) to x(bs,3,20,20,85)
-            x[i] = x[i].view(bs, self.na, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
+            x[i] = x[i].view(bs, self.num_anchors, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
 
             if not self.training:  # inference
                 if self.grid[i].shape[2:4] != x[i].shape[2:4]:
@@ -146,15 +146,15 @@ class YOLO(nn.Module):
         module = self.model[-1]  # Detect() module
         for f, s in zip(module.f, module.stride):  #  from
             mi = self.model[f % module.i]
-            b = mi.bias.view(module.na, -1)  # conv.bias(255) to (3,85)
+            b = mi.bias.view(module.num_anchors, -1)  # conv.bias(255) to (3,85)
             b[:, 4] += math.log(8 / (640 / s) ** 2)  # obj (8 objects per 640 image)
-            b[:, 5:] += math.log(0.6 / (module.nc - 0.99)) if cf is None else torch.log(cf / cf.sum())  # cls
+            b[:, 5:] += math.log(0.6 / (module.num_classes - 0.99)) if cf is None else torch.log(cf / cf.sum())  # cls
             mi.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
 
     def _print_biases(self):
         m = self.model[-1]  # Detect() module
         for f in sorted([x % m.i for x in m.f]):  #  from
-            b = self.model[f].bias.detach().view(m.na, -1).T  # conv.bias(255) to (3,85)
+            b = self.model[f].bias.detach().view(m.num_anchors, -1).T  # conv.bias(255) to (3,85)
             print(('%g Conv2d.bias:' + '%10.3g' * 6) % (f, *b[:5].mean(1).tolist(), b[5:].mean()))
 
     # def _print_weights(self):
@@ -175,7 +175,7 @@ class YOLO(nn.Module):
 def parse_model(model_dict, channels):
     print('\n%3s%15s%3s%10s  %-40s%-30s' % ('', 'from', 'n', 'params', 'module', 'arguments'))
     anchors = model_dict["anchors"]
-    num_classes = model_dict["classes"]
+    num_classes = model_dict["num_classes"]
     depth_multiple = model_dict["depth_multiple"]
     width_multiple = model_dict["width_multiple"]
     num_anchors = (len(anchors[0]) // 2)  # number of anchors
