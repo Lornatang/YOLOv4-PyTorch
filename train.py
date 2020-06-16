@@ -219,9 +219,9 @@ def train(parameters):
 
     # class frequency
     labels = np.concatenate(train_dataset.labels, 0)
-    classes = torch.tensor(labels[:, 0])  # classes
+    c = torch.tensor(labels[:, 0])  # classes
     plot_labels(labels)
-    tb_writer.add_histogram("classes", classes, 0)
+    tb_writer.add_histogram("classes", c, 0)
 
     # Exponential moving average
     ema = ModelEMA(model)
@@ -243,7 +243,7 @@ def train(parameters):
         # Update image weights (optional)
         if train_dataset.image_weights:
             w = model.class_weights.cpu().numpy() * (1 - maps) ** 2  # class weights
-            image_weights = labels_to_image_weights(train_dataset.labels, nc=classes, class_weights=w)
+            image_weights = labels_to_image_weights(train_dataset.labels, num_classes=classes, class_weights=w)
             train_dataset.indices = random.choices(range(train_dataset.image_files_num), weights=image_weights,
                                                    k=train_dataset.image_files_num)  # rand weighted idx
 
