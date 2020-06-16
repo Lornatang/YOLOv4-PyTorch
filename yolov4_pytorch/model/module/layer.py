@@ -143,12 +143,12 @@ class YOLO(nn.Module):
 
     def _initialize_biases(self, cf=None):  # initialize biases into Detect(), cf is class frequency
         # cf = torch.bincount(torch.tensor(np.concatenate(dataset.labels, 0)[:, 0]).long(), minlength=nc) + 1.
-        m = self.model[-1]  # Detect() module
-        for f, s in zip(m.f, m.stride):  #  from
-            mi = self.model[f % m.i]
-            b = mi.bias.view(m.na, -1)  # conv.bias(255) to (3,85)
+        module = self.model[-1]  # Detect() module
+        for f, s in zip(module.f, module.stride):  #  from
+            mi = self.model[f % module.i]
+            b = mi.bias.view(module.na, -1)  # conv.bias(255) to (3,85)
             b[:, 4] += math.log(8 / (640 / s) ** 2)  # obj (8 objects per 640 image)
-            b[:, 5:] += math.log(0.6 / (m.nc - 0.99)) if cf is None else torch.log(cf / cf.sum())  # cls
+            b[:, 5:] += math.log(0.6 / (module.nc - 0.99)) if cf is None else torch.log(cf / cf.sum())  # cls
             mi.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
 
     def _print_biases(self):
@@ -174,22 +174,25 @@ class YOLO(nn.Module):
 
 def parse_model(model_dict, channels):
     print('\n%3s%15s%3s%10s  %-40s%-30s' % ('', 'from', 'n', 'params', 'module', 'arguments'))
-    anchors, nc, gd, gw = model_dict['anchors'], model_dict['classes'], model_dict['depth_multiple'], model_dict['width_multiple']
-    na = (len(anchors[0]) // 2)  # number of anchors
-    no = na * (nc + 5)  # number of outputs = anchors * (classes + 5)
+    anchors = model_dict["anchors"]
+    num_classes = model_dict["classes"]
+    depth_multiple = model_dict["depth_multiple"]
+    width_multiple = model_dict["width_multiple"]
+    num_anchors = (len(anchors[0]) // 2)  # number of anchors
+    num_outputs = num_anchors * (num_classes + 5)  # number of outputs = anchors * (classes + 5)
 
-    layers, save, c2 = [], [], channels[-1]  # layers, savelist, ch out
-    for i, (f, n, m, args) in enumerate(model_dict['backbone'] + model_dict['head']):  # from, number, module, args
-        m = eval(m) if isinstance(m, str) else m  # eval strings
+    layers, save, out_channels = [], [], channels[-1]  # layers, savelist, out channels
+    for i, (f, number, module, args) in enumerate(model_dict['backbone'] + model_dict['head']):
+        module = eval(module) if isinstance(module, str) else module  # eval strings
         for j, a in enumerate(args):
             try:
                 args[j] = eval(a) if isinstance(a, str) else a  # eval strings
             except:
                 pass
 
-        n = max(round(n * gd), 1) if n > 1 else n  # depth gain
-        if m in [nn.Conv2d, Conv, Bottleneck, SPP, DWConv, MixConv2d, Focus, ConvPlus, BottleneckCSP]:
-            c1, c2 = channels[f], args[0]
+        number = max(round(number * depth_multiple), 1) if number > 1 else number  # depth gain
+        if module in [nn.Conv2d, Conv, Bottleneck, SPP, DWConv, MixConv2d, Focus, ConvPlus, BottleneckCSP]:
+            in_channels, out_channels = channels[f], args[0]
 
             # Normal
             # if i > 0 and args[0] != no:  # channel expansion factor
@@ -197,7 +200,7 @@ def parse_model(model_dict, channels):
             #     e = math.log(c2 / ch[1]) / math.log(2)
             #     c2 = int(ch[1] * ex ** e)
             # if m != Focus:
-            c2 = make_divisible(c2 * gw, 8) if c2 != no else c2
+            out_channels = make_divisible(out_channels * width_multiple, 8) if out_channels != num_outputs else out_channels
 
             # Experimental
             # if i > 0 and args[0] != no:  # channel expansion factor
@@ -208,25 +211,25 @@ def parse_model(model_dict, channels):
             # if m != Focus:
             #     c2 = make_divisible(c2, 8) if c2 != no else c2
 
-            args = [c1, c2, *args[1:]]
-            if m is BottleneckCSP:
-                args.insert(2, n)
-                n = 1
-        elif m is nn.BatchNorm2d:
+            args = [in_channels, out_channels, *args[1:]]
+            if module is BottleneckCSP:
+                args.insert(2, number)
+                number = 1
+        elif module is nn.BatchNorm2d:
             args = [channels[f]]
-        elif m is Concat:
-            c2 = sum([channels[-1 if x == -1 else x + 1] for x in f])
-        elif m is Detect:
-            f = f or list(reversed([(-1 if j == i else j - 1) for j, x in enumerate(channels) if x == no]))
+        elif module is Concat:
+            out_channels = sum([channels[-1 if x == -1 else x + 1] for x in f])
+        elif module is Detect:
+            f = f or list(reversed([(-1 if j == i else j - 1) for j, x in enumerate(channels) if x == num_outputs]))
         else:
-            c2 = channels[f]
+            out_channels = channels[f]
 
-        m_ = nn.Sequential(*[m(*args) for _ in range(n)]) if n > 1 else m(*args)  # module
-        t = str(m)[8:-2].replace('__main__.', '')  # module type
+        m_ = nn.Sequential(*[module(*args) for _ in range(number)]) if number > 1 else module(*args)  # module
+        t = str(module)[8:-2].replace('__main__.', '')  # module type
         np = sum([x.numel() for x in m_.parameters()])  # number params
         m_.i, m_.f, m_.type, m_.np = i, f, t, np  # attach index, 'from' index, type, number params
-        print('%3s%15s%3s%10.0f  %-40s%-30s' % (i, f, n, np, t, args))  # print
+        print('%3s%15s%3s%10.0f  %-40s%-30s' % (i, f, number, np, t, args))  # print
         save.extend(x % i for x in ([f] if isinstance(f, int) else f) if x != -1)  # append to savelist
         layers.append(m_)
-        channels.append(c2)
+        channels.append(out_channels)
     return nn.Sequential(*layers), sorted(save)
