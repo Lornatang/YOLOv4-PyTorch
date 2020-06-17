@@ -60,6 +60,7 @@ def evaluate(config_file,
     if model is None:
         training = False
         device = select_device(args.device, batch_size=batch_size)
+        half = device.type != "cpu"  # half precision only supported on CUDA
 
         # Remove previous
         for filename in glob.glob("test_batch_*.png"):
@@ -78,16 +79,24 @@ def evaluate(config_file,
         # Load model
         model.load_state_dict(torch.load(weights, map_location=device)["state_dict"])
         model.float()
-        model_info(model)
         model.fuse()
         model.to(device)
 
+        model_info(model)
+
+        if half:
+            model.half()
 
     else:  # called by train.py
         training = True
         device = next(model.parameters()).device  # get model device
 
+        half = False
+        if half:
+            model.half()
+
     # Configure run
+    model.eval()
     with open(data) as filename:
         data = yaml.load(filename, Loader=yaml.FullLoader)  # model dict
     num_classes = 1 if single_cls else int(data["num_classes"])  # number of classes
@@ -96,6 +105,9 @@ def evaluate(config_file,
 
     # Dataloader
     if dataloader is None:
+        image = torch.zeros((1, 3, image_size, image_size), device=device)  # init img
+        _ = model(image.half() if half else image.float()) if device.type != "cpu" else None  # run once
+
         fast |= confidence_threshold > 0.001  # enable fast mode
         path = data["test"] if args.task == "test" else data["val"]  # path to val/test images
         dataset = LoadImagesAndLabels(path,
@@ -112,16 +124,16 @@ def evaluate(config_file,
                                 collate_fn=dataset.collate_fn)
 
     seen = 0
-    model.eval()
-    _ = model(torch.zeros((1, 3, image_size, image_size), device=device)) if device.type != "cpu" else None  # run once
-    names = model.names if hasattr(model, "names") else model.module.names
+    names = data_dict["names"]
     coco91class = coco80_to_coco91_class()
     s = ("%20s" + "%12s" * 6) % ("Class", "Images", "Targets", "P", "R", "mAP@.5", "mAP@.5:.95")
     p, r, f1, mp, mr, map50, map, t0, t1 = 0., 0., 0., 0., 0., 0., 0., 0., 0.
     loss = torch.zeros(3, device=device)
     jdict, stats, ap, ap_class = [], [], [], []
     for batch_i, (images, targets, paths, shapes) in enumerate(tqdm(dataloader, desc=s)):
-        images = images.to(device).float() / 255.0  # uint8 to float32, 0 - 255 to 0.0 - 1.0
+        images = images.to(device)
+        images = images.half() if half else images.float()  # uint8 to fp16/32
+        images /= 255.0  # 0 - 255 to 0.0 - 1.0
         targets = targets.to(device)
         nb, _, height, width = images.shape  # batch size, channels, height, width
         whwh = torch.Tensor([width, height, width, height]).to(device)
