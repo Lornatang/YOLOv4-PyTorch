@@ -242,7 +242,7 @@ if __name__ == "__main__":
 
         # ------------------------------ Generate txt tags corresponding to xml ------------------------------ #
         print(f"=>>>>>> Clear {images_dir} temporary files.")
-        for filename in os.listdir(os.path.join(dataroot, f"JPEGImages", "*")):
+        for filename in os.listdir(os.path.join(dataroot, f"JPEGImages")):
             shutil.copy(filename, os.path.join(dataroot, "images"))
         shutil.rmtree(os.path.join(dataroot, "JPEGImages"))
         shutil.rmtree(os.path.join(dataroot, "Annotations"))
