@@ -19,8 +19,6 @@ import xml.etree.ElementTree
 
 from PIL import Image
 
-sets = ["train", "val"]
-
 classes = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
            'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow',
            'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
@@ -46,9 +44,9 @@ def convert(size, box):
     return x, y, w, h
 
 
-def convert_annotation(xml_path, image_index):
-    in_file = open(f"{xml_path}/{image_index}.xml")
-    out_file = open(f"labels/{image_index}.txt", "w")
+def voc_to_yolo(dataroot, images_dir, annotations_dir, image_index):
+    in_file = open(os.path.join(annotations_dir, image_index + ".xml"))
+    out_file = open(os.path.join(dataroot, "labels", image_index + ".txt"), "w")
     tree = xml.etree.ElementTree.parse(in_file)
     root = tree.getroot()
 
@@ -61,7 +59,7 @@ def convert_annotation(xml_path, image_index):
     except ValueError:
         pass
     else:
-        path = os.path.join(os.getcwd(), "JPEGImages", image_index + ".jpg")
+        path = os.path.join("../data/COCO", images_dir, image_index + ".jpg")
         img = Image.open(path)
         w, h = img.size
 
@@ -72,31 +70,28 @@ def convert_annotation(xml_path, image_index):
             continue
         cls_id = classes.index(cls)
         xmlbox = obj.find("bndbox")
-        box = (float(xmlbox.find("xmin").text), float(xmlbox.find("xmax").text), float(xmlbox.find("ymin").text),
+        box = (float(xmlbox.find("xmin").text),
+               float(xmlbox.find("xmax").text),
+               float(xmlbox.find("ymin").text),
                float(xmlbox.find("ymax").text))
+
         bbox = convert((w, h), box)
         out_file.write(str(cls_id) + " " + " ".join([str(a) for a in bbox]) + "\n")
 
 
-def main(args):
+def main(dataroot, images_dir, annotations_dir):
     try:
         os.makedirs("labels")
     except OSError:
         pass
 
-    for image_set in sets:
-        image_indexs = open(f"ImageSets/Main/{image_set}.txt").read().strip().split()
-        list_file = open(f"{image_set}.txt", "w")
-        for image_index in image_indexs:
-            list_file.write(f"data/{args.dataroot}/images/{image_index}.jpg\n")
-            convert_annotation(args.xml_path, image_index)
-        list_file.close()
+    list_file = open(f"{images_dir[:-4]}.txt", "w")
+    for image_index in open(
+            os.path.join(dataroot, "ImageSets", "Main", images_dir[:-4] + ".txt")).read().strip().split():
+        list_file.write(f"data/{dataroot}/{images_dir.split('/')[:-1]}/{image_index}.jpg\n")
+        voc_to_yolo(dataroot, images_dir, annotations_dir, image_index)
+    list_file.close()
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser("Script tool for dividing training set and verification set in dataset.")
-    parser.add_argument('--xml-path', type=str, default="./Annotations", help="Location of dimension files in dataset.")
-    parser.add_argument('--dataroot', type=str, required=True, help='Dataset name')
-    args = parser.parse_args()
-
-    main(args)
+    main("../data/coco2017", "val2017", "../data/coco2017/Annotations/")
