@@ -146,7 +146,7 @@ def detect(save_image=False):
                             file.write(("%g " * 5 + "\n") % (cls, *xywh))  # label format
 
                     if save_image or view_image:  # Add bbox to image
-                        label = f"{names[int(cls)]} {conf:.2f}"
+                        label = f"{names[int(cls)]} {int(conf * 100)}%"
                         plot_one_box(xyxy, raw_image, label=label, color=colors[int(cls)], line_thickness=3)
 
             # Print time (inference + NMS)
