@@ -163,7 +163,7 @@ data/coco2014.yaml
 
 data/coco2017/
 data/coco2017.yaml
-data/_coco
+data/_coco2017
 data/COCO
 
 # Dataset compressed file
@@ -178,4 +178,3 @@ video/
 configs/MASKED-Detection/
 
 *.pth
-
