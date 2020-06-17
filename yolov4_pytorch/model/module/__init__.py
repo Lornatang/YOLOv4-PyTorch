@@ -34,6 +34,7 @@ from .layer import parse_model
 from .neck import Bottleneck
 from .neck import BottleneckCSP
 from .neck import GhostBottleneck
+from .pooling import Maxpool
 
 __all__ = [
     "HardSwish",
@@ -58,5 +59,6 @@ __all__ = [
     "parse_model",
     "Bottleneck",
     "BottleneckCSP",
-    "GhostBottleneck"
+    "GhostBottleneck",
+    "Maxpool"
 ]

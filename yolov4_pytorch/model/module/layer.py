@@ -26,6 +26,7 @@ from .conv import MixConv2d
 from .head import SPP
 from .neck import Bottleneck
 from .neck import BottleneckCSP
+from .pooling import Maxpool
 from ..common import model_info
 from ..fuse import fuse_conv_and_bn
 from ...data.image import scale_image
@@ -221,6 +222,9 @@ def parse_model(model_dict, channels):
             out_channels = sum([channels[-1 if x == -1 else x + 1] for x in f])
         elif module is Detect:
             f = f or list(reversed([(-1 if j == i else j - 1) for j, x in enumerate(channels) if x == num_outputs]))
+        elif module is Maxpool:
+            kernel_size, strides = args[0], args[1]
+            args = [kernel_size, strides]
         else:
             out_channels = channels[f]
 
