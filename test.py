@@ -124,7 +124,7 @@ def evaluate(config_file,
                                 collate_fn=dataset.collate_fn)
 
     seen = 0
-    names = data_dict["names"]
+    names = data["names"]
     coco91class = coco80_to_coco91_class()
     s = ("%20s" + "%12s" * 6) % ("Class", "Images", "Targets", "P", "R", "mAP@.5", "mAP@.5:.95")
     p, r, f1, mp, mr, map50, map, t0, t1 = 0., 0., 0., 0., 0., 0., 0., 0., 0.
