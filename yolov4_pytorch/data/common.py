@@ -25,9 +25,10 @@ from ..utils.common import make_divisible
 
 def check_image_size(image_size, s=32):
     # Verify img_size is a multiple of stride s
-    if image_size % s != 0:
-        print(f'WARNING: --img-size {image_size} must be multiple of max stride {s}')
-    return make_divisible(image_size, s)  # nearest gs-multiple
+    new_size = make_divisible(image_size, s)  # ceil gs-multiple
+    if new_size != image_size:
+        print(f"WARNING: --image-size {image_size} must be multiple of max stride {s}, updating to {new_size}")
+    return new_size
 
 
 def create_folder(path="./outputs"):

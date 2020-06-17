@@ -19,7 +19,6 @@ from pathlib import Path
 
 import numpy as np
 import torch
-import torch.nn as nn
 import yaml
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -53,10 +52,10 @@ def evaluate(config_file,
              save_json=False,
              single_cls=False,
              augment=False,
+             verbose=False,
              model=None,
              dataloader=None,
-             fast=False,
-             verbose=False):  # 0 fast, 1 accurate
+             fast=False):  # 0 fast, 1 accurate
     # Initialize/load model and set device
     if model is None:
         training = False
@@ -83,16 +82,10 @@ def evaluate(config_file,
         model.fuse()
         model.to(device)
 
-        if device.type != "cpu" and torch.cuda.device_count() > 1:
-            model = nn.DataParallel(model)
 
     else:  # called by train.py
         training = True
         device = next(model.parameters()).device  # get model device
-
-        half = device.type != "cpu"  # half precision only supported on CUDA
-        if half:
-            model.half()  # to FP16
 
     # Configure run
     with open(data) as filename:
@@ -319,7 +312,8 @@ if __name__ == "__main__":
                  args.iou_threshold,
                  args.save_json,
                  args.single_cls,
-                 args.augment)
+                 args.augment,
+                 args.verbose)
 
     elif args.task == "study":  # run over a range of settings and save/plot
         for weights in ["yolov5s.pth", "yolov5m.pth", "yolov5l.pth", "yolov5x.pth"]:

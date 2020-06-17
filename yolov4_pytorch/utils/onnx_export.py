@@ -33,6 +33,7 @@ if __name__ == '__main__':
 
     # Load PyTorch model
     model = torch.load(opt.weights, map_location=torch.device('cpu'))['model']
+    model.float()
     model.eval()
     model.fuse()
 

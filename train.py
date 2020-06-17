@@ -222,8 +222,9 @@ def train(parameters):
     # class frequency
     labels = np.concatenate(train_dataset.labels, 0)
     c = torch.tensor(labels[:, 0])  # classes
-    plot_labels(labels)
-    tb_writer.add_histogram("classes", c, 0)
+    if tb_writer:
+        plot_labels(labels)
+        tb_writer.add_histogram("classes", c, 0)
 
     # Exponential moving average
     ema = ModelEMA(model)
@@ -252,7 +253,6 @@ def train(parameters):
         mean_losses = torch.zeros(4, device=device)  # mean losses
         print(("\n" + "%10s" * 8) % ("Epoch", "memory", "GIoU", "obj", "cls", "total", "targets", " image_size"))
         progress_bar = tqdm(enumerate(train_dataloader), total=nb)  # progress bar
-        ni = 0
         for index, (images, targets, paths, _) in progress_bar:
             ni = index + nb * epoch  # number integrated batches (since train start)
             images = images.to(device).float() / 255.0  # uint8 to float32, 0 - 255 to 0.0 - 1.0
@@ -372,7 +372,7 @@ def train(parameters):
     if not args.evolve:
         plot_results()  # save as results.png
     print(f"{epoch - start_epoch + 1} epochs completed in {(time.time() - t0) / 3600:.3f} hours.\n")
-    dist.destroy_process_group() if torch.cuda.device_count() > 1 else None
+    dist.destroy_process_group() if device.type != "cpu" and torch.cuda.device_count() > 1 else None
     torch.cuda.empty_cache()
     return results
 
