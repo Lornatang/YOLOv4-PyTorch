@@ -178,6 +178,7 @@ def train(parameters):
                                 world_size=1,  # number of nodes
                                 rank=0)  # node rank
         model = torch.nn.parallel.DistributedDataParallel(model)
+        # pip install torch==1.4.0+cu100 torchvision==0.5.0+cu100 -f https://download.pytorch.org/whl/torch_stable.html
 
     # Dataset
     # Apply augmentation hyper parameters (option: rectangular training)
