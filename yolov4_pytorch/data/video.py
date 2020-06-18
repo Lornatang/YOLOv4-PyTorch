@@ -32,7 +32,7 @@ class LoadWebCam:
     def __init__(self, pipe=0, image_size=416):
         self.image_size = image_size
 
-        if pipe == '0':
+        if pipe == "0":
             pipe = 0  # local camera
 
         self.pipe = pipe
@@ -45,7 +45,7 @@ class LoadWebCam:
 
     def __next__(self):
         self.count += 1
-        if cv2.waitKey(1) == ord('q'):  # q to quit
+        if cv2.waitKey(1) == ord("q"):  # q to quit
             self.cap.release()
             cv2.destroyAllWindows()
             raise StopIteration
@@ -66,8 +66,8 @@ class LoadWebCam:
 
         # Print
         assert ret_val, f"Camera Error {self.pipe}"
-        image_path = 'webcam.png'
-        print(f"webcam {self.count}: ", end='')
+        image_path = "webcam.png"
+        print(f"webcam {self.count}: ", end="")
 
         # Padded resize
         image = letterbox(raw_image, new_shape=self.image_size)[0]
@@ -90,12 +90,12 @@ class LoadStreams:
         image_size (int): Image size in default data flow. (default:``416``).
     """
 
-    def __init__(self, sources='streams.txt', image_size=416):
-        self.mode = 'images'
+    def __init__(self, sources="streams.txt", image_size=416):
+        self.mode = "images"
         self.image_size = image_size
 
         if os.path.isfile(sources):
-            with open(sources, 'r') as f:
+            with open(sources, "r") as f:
                 sources = [x.strip() for x in f.read().splitlines() if len(x.strip())]
         else:
             sources = [sources]
@@ -105,23 +105,23 @@ class LoadStreams:
         self.sources = sources
         for i, s in enumerate(sources):
             # Start the thread to read frames from the video stream
-            print('%g/%g: %s... ' % (i + 1, n, s), end='')
-            cap = cv2.VideoCapture(0 if s == '0' else s)
-            assert cap.isOpened(), 'Failed to open %s' % s
+            print("%g/%g: %s... " % (i + 1, n, s), end="")
+            cap = cv2.VideoCapture(0 if s == "0" else s)
+            assert cap.isOpened(), "Failed to open %s" % s
             w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
             h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
             fps = cap.get(cv2.CAP_PROP_FPS) % 100
             _, self.images[i] = cap.read()  # guarantee first frame
             thread = Thread(target=self.update, args=([i, cap]), daemon=True)
-            print(' success (%gx%g at %.2f FPS).' % (w, h, fps))
+            print(" success (%gx%g at %.2f FPS)." % (w, h, fps))
             thread.start()
-        print('')  # newline
+        print("")  # newline
 
         # check for common shapes
         s = np.stack([letterbox(x, new_shape=self.image_size)[0].shape for x in self.images], 0)  # inference shapes
         self.rect = np.unique(s, axis=0).shape[0] == 1  # rect inference if all shapes equal
         if not self.rect:
-            print('WARNING: Different stream shapes detected. For optimal performance supply similarly-shaped streams.')
+            print("WARNING: Different stream shapes detected. For optimal performance supply similarly-shaped streams.")
 
     def update(self, index, cap):
         # Read next stream frame in a daemon thread
@@ -142,7 +142,7 @@ class LoadStreams:
     def __next__(self):
         self.count += 1
         raw_image = self.images.copy()
-        if cv2.waitKey(1) == ord('q'):  # q to quit
+        if cv2.waitKey(1) == ord("q"):  # q to quit
             cv2.destroyAllWindows()
             raise StopIteration
 
