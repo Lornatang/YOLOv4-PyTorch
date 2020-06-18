@@ -116,9 +116,8 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <th valign="bottom">FLOPs</th>
 <th valign="bottom">download</th>
 <!-- TABLE BODY -->
-<!-- ROW: Darknet-53 -->
- <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov3.yaml">Darknet-53</a></td>
-<td align="center">0.156</td>
+<!-- ROW: VGG16 -->
+ <tr><td align="left"><a href="configs/PascalVOC-Detection/vgg16.yaml">VGG16</a></td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
@@ -126,10 +125,11 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
-<td align="center"><a href="-">-</a>&nbsp;</td>
+<td align="center">-</td>
+<td align="center">-</td>
 </tr>
-<!-- ROW: CSPDarknet-53-small -->
- <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5s.yaml">CSPDarknet-53-small</a></td>
+<!-- ROW: YOLOv3 -->
+ <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov3.yaml">YOLOv3</a></td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
@@ -138,10 +138,10 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
-<td align="center"><a href="-">-</a>&nbsp;</td>
+<td align="center">-</td>
 </tr>
-<!-- ROW: CSPDarknet-53-medium -->
- <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5m.yaml">CSPDarknet-53-medium</a></td>
+<!-- ROW: YOLOv3-SPP -->
+ <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov3-spp.yaml">YOLOv3-SPP</a></td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
@@ -150,10 +150,10 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
-<td align="center"><a href="-">-</a>&nbsp;</td>
+<td align="center">-</td>
 </tr>
-<!-- ROW: CSPDarknet-53-large -->
- <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5l.yaml">CSPDarknet-53-large</a></td>
+<!-- ROW: YOLOv4 -->
+ <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov4.yaml">YOLOv4</a></td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
@@ -162,10 +162,10 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
-<td align="center"><a href="-">-</a>&nbsp;</td>
+<td align="center">-</td>
 </tr>
-<!-- ROW: CSPDarknet-53-xlarge -->
- <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5x.yaml">CSPDarknet-53-xlarge</a></td>
+<!-- ROW: YOLOv5-small -->
+ <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5s.yaml">YOLOv5-small</a></td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
@@ -174,10 +174,10 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
-<td align="center"><a href="-">-</a>&nbsp;</td>
+<td align="center">-</td>
 </tr>
-<!-- ROW: GhostDarknet-53 -->
- <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5g.yaml">GhostDarknet-53</a></td>
+<!-- ROW: YOLOv5-medium -->
+ <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5m.yaml">YOLOv5-medium</a></td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
@@ -186,7 +186,31 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
-<td align="center"><a href="-">-</a>&nbsp;</td>
+<td align="center">-</td>
+</tr>
+<!-- ROW: YOLOv5-large -->
+ <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5l.yaml">YOLOv5-large</a></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+</tr>
+<!-- ROW: YOLOv5-xlarge -->
+ <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5x.yaml">YOLOv5-xlarge</a></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
 </tr>
 </tbody></table>
 
@@ -210,17 +234,17 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <!-- TABLE HEADER -->
 <th valign="bottom">Model</th>
 <th valign="bottom">train<br/>time<br/>(s/iter)</th>
-<th valign="bottom">inference<br/>time<br/>(s/im)</th>
+<th valign="bottom">inference<br/>time<br/>(ms/im)</th>
 <th valign="bottom">train<br/>mem<br/>(GB)</th>
-<th valign="bottom">AP<sup>val</sup></th>
+<th valign="bottom">AP<sup>test</sup></th>
 <th valign="bottom">AP<sub>50</sub></th>
 <th valign="bottom">fps</th>
 <th valign="bottom">params</th>
 <th valign="bottom">FLOPs</th>
 <th valign="bottom">download</th>
 <!-- TABLE BODY -->
-<!-- ROW: Darknet-53 -->
- <tr><td align="left"><a href="configs/COCO-Detection/yolov3.yaml">Darknet-53</a></td>
+<!-- ROW: VGG16 -->
+ <tr><td align="left"><a href="configs/COCO-Detection/vgg16.yaml">VGG16</a></td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
@@ -229,10 +253,10 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
-<td align="center"><a href="-">-</a>&nbsp;</td>
+<td align="center">-</td>
 </tr>
-<!-- ROW: CSPDarknet-53-small -->
- <tr><td align="left"><a href="configs/COCO-Detection/yolov5s.yaml">CSPDarknet-53-small</a></td>
+<!-- ROW: YOLOv3 -->
+ <tr><td align="left"><a href="configs/COCO-Detection/yolov3.yaml">YOLOv3</a></td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
@@ -241,10 +265,10 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
-<td align="center"><a href="-">-</a>&nbsp;</td>
+<td align="center">-</td>
 </tr>
-<!-- ROW: CSPDarknet-53-medium -->
- <tr><td align="left"><a href="configs/COCO-Detection/yolov5m.yaml">CSPDarknet-53-medium</a></td>
+<!-- ROW: YOLOv3-SPP -->
+ <tr><td align="left"><a href="configs/COCO-Detection/yolov3-spp.yaml">YOLOv3-SPP</a></td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
@@ -253,10 +277,10 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
-<td align="center"><a href="-">-</a>&nbsp;</td>
+<td align="center">-</td>
 </tr>
-<!-- ROW: CSPDarknet-53-large -->
- <tr><td align="left"><a href="configs/COCO-Detection/yolov5l.yaml">CSPDarknet-53-large</a></td>
+<!-- ROW: YOLOv4 -->
+ <tr><td align="left"><a href="configs/COCO-Detection/yolov4.yaml">YOLOv4</a></td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
@@ -265,10 +289,10 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
-<td align="center"><a href="-">-</a>&nbsp;</td>
+<td align="center">-</td>
 </tr>
-<!-- ROW: CSPDarknet-53-xlarge -->
- <tr><td align="left"><a href="configs/COCO-Detection/yolov5x.yaml">CSPDarknet-53-xlarge</a></td>
+<!-- ROW: YOLOv5-small -->
+ <tr><td align="left"><a href="configs/COCO-Detection/yolov5s.yaml">YOLOv5-small</a></td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
@@ -277,10 +301,10 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
-<td align="center"><a href="-">-</a>&nbsp;</td>
+<td align="center">-</td>
 </tr>
-<!-- ROW: GhostDarknet-53 -->
- <tr><td align="left"><a href="configs/COCO-Detection/yolov5g.yaml">GhostDarknet-53</a></td>
+<!-- ROW: YOLOv5-medium -->
+ <tr><td align="left"><a href="configs/COCO-Detection/yolov5m.yaml">YOLOv5-medium</a></td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
@@ -289,7 +313,31 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
-<td align="center"><a href="-">-</a>&nbsp;</td>
+<td align="center">-</td>
+</tr>
+<!-- ROW: YOLOv5-large -->
+ <tr><td align="left"><a href="configs/COCO-Detection/yolov5l.yaml">YOLOv5-large</a></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+</tr>
+<!-- ROW: YOLOv5-xlarge -->
+ <tr><td align="left"><a href="configs/COCO-Detection/yolov5x.yaml">YOLOv5-xlarge</a></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
 </tr>
 </tbody></table>
 
