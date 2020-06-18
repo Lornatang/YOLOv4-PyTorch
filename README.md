@@ -68,21 +68,21 @@ usage: train.py [-h] [--epochs EPOCHS] [--batch-size BATCH_SIZE]
 
 To train on COCO2014/COCO2017 run: 
 ```bash
-$ python train.py --config-file configs/COCO-Detection/yolov5s.yaml  --data data/coco2014.yaml --weights ""
+$ python train.py --config-file configs/COCO-Detection/yolov5-small.yaml  --data data/coco2014.yaml --weights ""
 ```
 
 - Example (VOC2007+2012)
 
 To train on VOC07+12 run:
 ```bash
-$ python train.py --config-file configs/PascalVOC-Detection/yolov5s.yaml  --data data/voc2007.yaml --weights ""
+$ python train.py --config-file configs/PascalVOC-Detection/yolov5-small.yaml  --data data/voc2007.yaml --weights ""
 ```
 
 - Other training methods
 
-**Normal Training:** `python3 train.py --config-file configs/COCO-Detection/yolov5s.yaml  --data data/coco2014.yaml --weights ""` to begin training after downloading COCO data with `data/get_coco_dataset.sh`. Each epoch trains on 117,263 images from the train and validate COCO sets, and tests on 5000 images from the COCO validate set.
+**Normal Training:** `python3 train.py --config-file configs/COCO-Detection/yolov5-small.yaml  --data data/coco2014.yaml --weights ""` to begin training after downloading COCO data with `data/get_coco_dataset.sh`. Each epoch trains on 117,263 images from the train and validate COCO sets, and tests on 5000 images from the COCO validate set.
 
-**Resume Training:** `python train.py --config-file configs/COCO-Detection/yolov5s.yaml  --data data/coco2014.yaml --resume` to resume training from `weights/checkpoint.pth`.
+**Resume Training:** `python train.py --config-file configs/COCO-Detection/yolov5-small.yaml  --data data/coco2014.yaml --resume` to resume training from `weights/checkpoint.pth`.
 
 #### Test
 All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 2080 SUPER GPUs & NVLink. The software in use were PyTorch 1.5, CUDA 10.2, cuDNN 7.6.5.
@@ -165,7 +165,7 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <td align="center">-</td>
 </tr>
 <!-- ROW: YOLOv5-small -->
- <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5s.yaml">YOLOv5-small</a></td>
+ <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5-small.yaml">YOLOv5-small</a></td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
@@ -177,7 +177,7 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <td align="center">-</td>
 </tr>
 <!-- ROW: YOLOv5-medium -->
- <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5m.yaml">YOLOv5-medium</a></td>
+ <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5-medium.yaml">YOLOv5-medium</a></td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
@@ -189,7 +189,7 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <td align="center">-</td>
 </tr>
 <!-- ROW: YOLOv5-large -->
- <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5l.yaml">YOLOv5-large</a></td>
+ <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5-large.yaml">YOLOv5-large</a></td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
@@ -201,7 +201,7 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <td align="center">-</td>
 </tr>
 <!-- ROW: YOLOv5-xlarge -->
- <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5x.yaml">YOLOv5-xlarge</a></td>
+ <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5-xlarge.yaml">YOLOv5-xlarge</a></td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
@@ -292,7 +292,7 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <td align="center">-</td>
 </tr>
 <!-- ROW: YOLOv5-small -->
- <tr><td align="left"><a href="configs/COCO-Detection/yolov5s.yaml">YOLOv5-small</a></td>
+ <tr><td align="left"><a href="configs/COCO-Detection/yolov5-small.yaml">YOLOv5-small</a></td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
@@ -304,7 +304,7 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <td align="center">-</td>
 </tr>
 <!-- ROW: YOLOv5-medium -->
- <tr><td align="left"><a href="configs/COCO-Detection/yolov5m.yaml">YOLOv5-medium</a></td>
+ <tr><td align="left"><a href="configs/COCO-Detection/yolov5-medium.yaml">YOLOv5-medium</a></td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
@@ -316,7 +316,7 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <td align="center">-</td>
 </tr>
 <!-- ROW: YOLOv5-large -->
- <tr><td align="left"><a href="configs/COCO-Detection/yolov5l.yaml">YOLOv5-large</a></td>
+ <tr><td align="left"><a href="configs/COCO-Detection/yolov5-large.yaml">YOLOv5-large</a></td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
@@ -328,7 +328,7 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <td align="center">-</td>
 </tr>
 <!-- ROW: YOLOv5-xlarge -->
- <tr><td align="left"><a href="configs/COCO-Detection/yolov5x.yaml">YOLOv5-xlarge</a></td>
+ <tr><td align="left"><a href="configs/COCO-Detection/yolov5-xlarge.yaml">YOLOv5-xlarge</a></td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
@@ -354,7 +354,7 @@ usage: detect.py [-h] [--config-file CONFIG_FILE] [--data DATA]
                  [--classes CLASSES [CLASSES ...]] [--agnostic-nms]
                  [--augment]
 example:
-$ python detect.py --config-file configs/COCO-Detection/yolov5s.yaml  --data data/coco2014.yaml --weights weights/yolov5x.pth  --source ...
+$ python detect.py --config-file configs/COCO-Detection/yolov5-small.yaml  --data data/coco2014.yaml --weights weights/yolov5-xlarge.pth  --source ...
 ```
 
 - Image:  `--source file.jpg`
