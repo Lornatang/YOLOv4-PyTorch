@@ -107,7 +107,7 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <!-- TABLE HEADER -->
 <th valign="bottom">Model</th>
 <th valign="bottom">train<br/>time<br/>(s/iter)</th>
-<th valign="bottom">inference<br/>time<br/>(s/im)</th>
+<th valign="bottom">inference<br/>time<br/>(ms/im)</th>
 <th valign="bottom">train<br/>mem<br/>(GB)</th>
 <th valign="bottom">AP<sup>test</sup></th>
 <th valign="bottom">AP<sub>50</sub></th>
@@ -118,7 +118,7 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <!-- TABLE BODY -->
 <!-- ROW: Darknet-53 -->
  <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov3.yaml">Darknet-53</a></td>
-<td align="center">-</td>
+<td align="center">0.156</td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
@@ -212,7 +212,7 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <th valign="bottom">train<br/>time<br/>(s/iter)</th>
 <th valign="bottom">inference<br/>time<br/>(s/im)</th>
 <th valign="bottom">train<br/>mem<br/>(GB)</th>
-<th valign="bottom">AP<sup>test</sup></th>
+<th valign="bottom">AP<sup>val</sup></th>
 <th valign="bottom">AP<sub>50</sub></th>
 <th valign="bottom">fps</th>
 <th valign="bottom">params</th>
