@@ -136,6 +136,7 @@ outputs/
 results.txt
 train_batch_*.png
 test_batch_*.png
+*.json
 labels.png
 results.png
 
@@ -163,7 +164,6 @@ data/coco2014.yaml
 
 data/coco2017/
 data/coco2017.yaml
-data/_coco2017
 data/COCO
 
 # Dataset compressed file
@@ -176,5 +176,6 @@ video/
 
 # Custom model file
 configs/MASKED-Detection/
+configs/SafetyHat-Detection
 
 *.pth
