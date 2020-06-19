@@ -251,7 +251,7 @@ def evaluate(config_file,
     # Save JSON
     if save_json and map50 and len(jdict):
         imgIds = [int(Path(x).stem.split("_")[-1]) for x in dataloader.dataset.image_files]
-        filename = f"detections_val2017_{(weights.split(os.sep)[-1].replace('.pth', '') if weights else '')}_results.json"
+        filename = f"detections_val2017_{(weights.split(os.sep)[-1].replace('.pth', '') if weights else '')}results.json"
         print("\nCOCO mAP with pycocotools... saving %s..." % filename)
         with open(filename, "w") as file:
             json.dump(jdict, file)
