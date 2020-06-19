@@ -68,22 +68,6 @@ def DWConv(c1, c2, k=1, s=1, act=True):
     return Conv(c1, c2, k, s, g=math.gcd(c1, c2), act=act)
 
 
-class MobileNetConv(nn.Module):
-    # Standard convolution
-    def __init__(self, in_channel, out_channel, kernel_size, stride):
-        super(MobileNetConv, self).__init__()
-        self.conv = nn.Conv2d(in_channel, out_channel, kernel_size=kernel_size, stride=stride, padding=kernel_size // 2,
-                              groups=in_channel if kernel_size == 1 else 0)
-        self.bn = nn.BatchNorm2d(out_channel)
-        self.act = nn.ReLU(inplace=True) if kernel_size == 1 else nn.ReLU6(inplace=True)
-
-    def forward(self, x):
-        return self.act(self.bn(self.conv(x)))
-
-    def fuseforward(self, x):
-        return self.act(self.conv(x))
-
-
 class GhostConv(nn.Module):
     # Ghost Convolution https://github.com/huawei-noah/ghostnet
     def __init__(self, c1, c2, k=1, s=1, g=1, act=True):  # ch_in, ch_out, kernel, stride, groups
@@ -119,3 +103,19 @@ class MixConv2d(nn.Module):
 
     def forward(self, x):
         return x + self.act(self.bn(torch.cat([m(x) for m in self.m], 1)))
+
+
+class MobileNetConv(nn.Module):
+    # Standard convolution
+    def __init__(self, in_channels, out_channels, kernel_size, stride):
+        super(MobileNetConv, self).__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride,
+                              padding=kernel_size // 2, groups=in_channels if kernel_size == 3 else 1)
+        self.bn = nn.BatchNorm2d(out_channels)
+        self.act = nn.ReLU(inplace=True) if kernel_size == 1 else nn.ReLU6(inplace=True)
+
+    def forward(self, x):
+        return self.act(self.bn(self.conv(x)))
+
+    def fuseforward(self, x):
+        return self.act(self.conv(x))
