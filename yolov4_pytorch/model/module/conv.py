@@ -11,11 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+
 import math
 
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class Conv(nn.Module):
@@ -33,6 +35,23 @@ class Conv(nn.Module):
         return self.act(self.conv(x))
 
 
+class ConvBNReLU(nn.Module):
+
+    def __init__(self, in_channels, out_channels, kernel_size, stride, groups):
+        super(ConvBNReLU, self).__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size, stride, kernel_size // 2, groups=groups,
+                              bias=False)
+        self.bn = nn.BatchNorm2d(out_channels)
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.bn(x)
+        return F.relu(x, inplace=True)
+
+    def fuseforward(self, x):
+        return F.relu(self.conv(x), inplace=True)
+
+
 class ConvPlus(nn.Module):
     # Plus-shaped convolution
     def __init__(self, c1, c2, k=3, s=1, g=1, bias=True):  # ch_in, ch_out, kernel, stride, groups
@@ -47,6 +66,22 @@ class ConvPlus(nn.Module):
 def DWConv(c1, c2, k=1, s=1, act=True):
     # Depthwise convolution
     return Conv(c1, c2, k, s, g=math.gcd(c1, c2), act=act)
+
+
+class MobileNetConv(nn.Module):
+    # Standard convolution
+    def __init__(self, in_channel, out_channel, kernel_size, stride):
+        super(MobileNetConv, self).__init__()
+        self.conv = nn.Conv2d(in_channel, out_channel, kernel_size=kernel_size, stride=stride, padding=kernel_size // 2,
+                              groups=in_channel if kernel_size == 1 else 0)
+        self.bn = nn.BatchNorm2d(out_channel)
+        self.act = nn.ReLU(inplace=True) if kernel_size == 1 else nn.ReLU6(inplace=True)
+
+    def forward(self, x):
+        return self.act(self.bn(self.conv(x)))
+
+    def fuseforward(self, x):
+        return self.act(self.conv(x))
 
 
 class GhostConv(nn.Module):

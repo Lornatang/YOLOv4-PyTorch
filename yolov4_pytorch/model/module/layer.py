@@ -20,12 +20,15 @@ import yaml
 from .common import Concat
 from .common import Focus
 from .conv import Conv
+from .conv import ConvBNReLU
 from .conv import ConvPlus
 from .conv import DWConv
 from .conv import MixConv2d
+from .conv import MobileNetConv
 from .head import SPP
 from .neck import Bottleneck
 from .neck import BottleneckCSP
+from .neck import ResNetBottleneck
 from .pooling import Maxpool
 from ..common import model_info
 from ..fuse import fuse_conv_and_bn
@@ -192,7 +195,8 @@ def parse_model(model_dict, channels):
                 pass
 
         number = max(round(number * depth_multiple), 1) if number > 1 else number  # depth gain
-        if module in [nn.Conv2d, Conv, Bottleneck, SPP, DWConv, MixConv2d, Focus, ConvPlus, BottleneckCSP]:
+        if module in [nn.Conv2d, Conv, Bottleneck, SPP, DWConv, MixConv2d, Focus, ConvPlus, BottleneckCSP,
+                      ResNetBottleneck, MobileNetConv, ConvBNReLU]:
             in_channels, out_channels = channels[f], args[0]
 
             # Normal
@@ -201,7 +205,8 @@ def parse_model(model_dict, channels):
             #     e = math.log(c2 / ch[1]) / math.log(2)
             #     c2 = int(ch[1] * ex ** e)
             # if m != Focus:
-            out_channels = make_divisible(out_channels * width_multiple, 8) if out_channels != num_outputs else out_channels
+            out_channels = make_divisible(out_channels * width_multiple,
+                                          8) if out_channels != num_outputs else out_channels
 
             # Experimental
             # if i > 0 and args[0] != no:  # channel expansion factor

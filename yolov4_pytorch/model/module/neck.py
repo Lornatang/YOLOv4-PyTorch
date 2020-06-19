@@ -64,3 +64,16 @@ class GhostBottleneck(nn.Module):
 
     def forward(self, x):
         return self.conv(x) + self.shortcut(x)
+
+
+class ResNetBottleneck(nn.Module):
+    # Standard bottleneck
+    def __init__(self, c1, c2, s=1, e=0.25):  # ch_in, ch_out, shortcut, expansion
+        super(ResNetBottleneck, self).__init__()
+        c_ = int(c2 * e)  # hidden channels
+        self.cv1 = Conv(c1, c_, 1, 1)
+        self.cv2 = Conv(c_, c_, 3, s)
+        self.cv3 = Conv(c_, c2, 1, 1)
+
+    def forward(self, x):
+        return x + self.cv3(self.cv2(self.cv1(x)))

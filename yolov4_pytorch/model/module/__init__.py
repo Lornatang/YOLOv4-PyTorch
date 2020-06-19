@@ -23,10 +23,12 @@ from .common import Flatten
 from .common import Focus
 from .common import Sum
 from .conv import Conv
+from .conv import ConvBNReLU
 from .conv import ConvPlus
 from .conv import DWConv
 from .conv import GhostConv
 from .conv import MixConv2d
+from .conv import MobileNetConv
 from .head import SPP
 from .layer import Detect
 from .layer import YOLO
@@ -34,6 +36,7 @@ from .layer import parse_model
 from .neck import Bottleneck
 from .neck import BottleneckCSP
 from .neck import GhostBottleneck
+from .neck import ResNetBottleneck
 from .pooling import Maxpool
 
 __all__ = [
@@ -49,10 +52,12 @@ __all__ = [
     "Focus",
     "Sum",
     "Conv",
+    "ConvBNReLU",
     "ConvPlus",
     "DWConv",
     "GhostConv",
     "MixConv2d",
+    "MobileNetConv",
     "SPP",
     "Detect",
     "YOLO",
@@ -60,5 +65,6 @@ __all__ = [
     "Bottleneck",
     "BottleneckCSP",
     "GhostBottleneck",
+    "ResNetBottleneck",
     "Maxpool"
 ]
