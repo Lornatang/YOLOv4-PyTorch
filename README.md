@@ -64,11 +64,11 @@ usage: train.py [-h] [--epochs EPOCHS] [--batch-size BATCH_SIZE]
                 [--single-cls]
 ```
 
-- Example (COCO2014)
+- Example (COCO2017)
 
 To train on COCO2014/COCO2017 run: 
 ```bash
-$ python train.py --config-file configs/COCO-Detection/yolov5-small.yaml  --data data/coco2014.yaml --weights ""
+$ python train.py --config-file configs/COCO-Detection/yolov5-small.yaml  --data data/coco2017.yaml --weights ""
 ```
 
 - Example (VOC2007+2012)
@@ -80,7 +80,7 @@ $ python train.py --config-file configs/PascalVOC-Detection/yolov5-small.yaml  -
 
 - Other training methods
 
-**Normal Training:** `python3 train.py --config-file configs/COCO-Detection/yolov5-small.yaml  --data data/coco2014.yaml --weights ""` to begin training after downloading COCO data with `data/get_coco_dataset.sh`. Each epoch trains on 117,263 images from the train and validate COCO sets, and tests on 5000 images from the COCO validate set.
+**Normal Training:** `python train.py --config-file configs/COCO-Detection/yolov5-small.yaml  --data data/coco2014.yaml --weights ""` to begin training after downloading COCO data with `data/get_coco_dataset.sh`. Each epoch trains on 117,263 images from the train and validate COCO sets, and tests on 5000 images from the COCO validate set.
 
 **Resume Training:** `python train.py --config-file configs/COCO-Detection/yolov5-small.yaml  --data data/coco2014.yaml --resume` to resume training from `weights/checkpoint.pth`.
 
