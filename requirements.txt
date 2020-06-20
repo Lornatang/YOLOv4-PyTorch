@@ -6,9 +6,10 @@ torch
 torchvision
 onnx
 matplotlib
-PyYAML
+PyYAML>=5.3
 scipy
 tqdm
+tensorboard
 pillow
 thop
 scikit-image
