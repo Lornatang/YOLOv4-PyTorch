@@ -19,11 +19,11 @@ from .conv import Conv
 
 class SPP(nn.Module):
     # Spatial pyramid pooling layer used in YOLOv3-SPP
-    def __init__(self, c1, c2, k=(5, 9, 13)):
+    def __init__(self, in_channels, out_channels, k=(5, 9, 13)):
         super(SPP, self).__init__()
-        c_ = c1 // 2  # hidden channels
-        self.cv1 = Conv(c1, c_, 1, 1)
-        self.cv2 = Conv(c_ * (len(k) + 1), c2, 1, 1)
+        c_ = in_channels // 2  # hidden channels
+        self.cv1 = Conv(in_channels, c_, 1, 1)
+        self.cv2 = Conv(c_ * (len(k) + 1), out_channels, 1, 1)
         self.m = nn.ModuleList([nn.MaxPool2d(kernel_size=x, stride=1, padding=x // 2) for x in k])
 
     def forward(self, x):
