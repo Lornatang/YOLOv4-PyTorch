@@ -135,7 +135,7 @@ def evaluate(config_file,
         images = images.half() if half else images.float()  # uint8 to fp16/32
         images /= 255.0  # 0 - 255 to 0.0 - 1.0
         targets = targets.to(device)
-        nb, _, height, width = images.shape  # batch size, channels, height, width
+        batch_size, _, height, width = images.shape  # batch size, channels, height, width
         whwh = torch.Tensor([width, height, width, height]).to(device)
 
         # Disable gradients
@@ -146,7 +146,7 @@ def evaluate(config_file,
             t0 += time_synchronized() - t
 
             # Compute loss
-            if training:  # if model has loss hyperparameters
+            if training:  # if model has loss hyper parameters
                 loss += compute_loss([x.float() for x in train_out], targets, model)[1][:3]  # GIoU, obj, cls
 
             # Run NMS
