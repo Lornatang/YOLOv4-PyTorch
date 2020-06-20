@@ -98,7 +98,7 @@ def plot_images(images, targets, paths=None, filename='images.png', names=None, 
                 color = color_lut[cls % len(color_lut)]
                 cls = names[cls] if names else cls
                 if gt or conf[j] > 0.3:  # 0.3 conf thresh
-                    label = '%s' % cls if gt else '%s %.1f' % (cls, conf[j])
+                    label = f"{cls}" if gt else f"{cls} {conf[j] * 100}%"
                     plot_one_box(box, mosaic, label=label, color=color, line_thickness=tl)
 
         # Draw image filename labels
