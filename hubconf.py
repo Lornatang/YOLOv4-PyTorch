@@ -23,7 +23,7 @@ dependencies = ['torch', 'yaml']
 
 
 def create(name, pretrained, channels, classes):
-    """Creates a specified YOLOv5 model
+    """Creates a specified YOLOv3/4/5 model
 
     Arguments:
         name (str): name of model, i.e. 'yolov5s'
@@ -43,7 +43,91 @@ def create(name, pretrained, channels, classes):
     return model
 
 
-def yolov5s(pretrained=False, channels=3, classes=80):
+def mobilenentv1(pretrained=False, channels=3, classes=80):
+    """mobilenent-v1 model from https://github.com/Lornatang/YOLOv4-PyTorch
+
+    Arguments:
+        pretrained (bool): load pretrained weights into the model, default=False
+        channels (int): number of input channels, default=3
+        classes (int): number of model classes, default=80
+
+    Returns:
+        pytorch model
+    """
+    return create('mobilenentv1', pretrained, channels, classes)
+
+
+def vgg16(pretrained=False, channels=3, classes=80):
+    """vgg16 model from https://github.com/Lornatang/YOLOv4-PyTorch
+
+    Arguments:
+        pretrained (bool): load pretrained weights into the model, default=False
+        channels (int): number of input channels, default=3
+        classes (int): number of model classes, default=80
+
+    Returns:
+        pytorch model
+    """
+    return create('vgg16', pretrained, channels, classes)
+
+
+def yolov3(pretrained=False, channels=3, classes=80):
+    """yolov3 model from https://github.com/Lornatang/YOLOv4-PyTorch
+
+    Arguments:
+        pretrained (bool): load pretrained weights into the model, default=False
+        channels (int): number of input channels, default=3
+        classes (int): number of model classes, default=80
+
+    Returns:
+        pytorch model
+    """
+    return create('yolov3', pretrained, channels, classes)
+
+
+def yolov3_spp(pretrained=False, channels=3, classes=80):
+    """YOLOv3_SPP model from https://github.com/Lornatang/YOLOv4-PyTorch
+
+    Arguments:
+        pretrained (bool): load pretrained weights into the model, default=False
+        channels (int): number of input channels, default=3
+        classes (int): number of model classes, default=80
+
+    Returns:
+        pytorch model
+    """
+    return create('yolov3-spp', pretrained, channels, classes)
+
+
+def yolov3_tiny(pretrained=False, channels=3, classes=80):
+    """YOLOv3_tiny model from https://github.com/Lornatang/YOLOv4-PyTorch
+
+    Arguments:
+        pretrained (bool): load pretrained weights into the model, default=False
+        channels (int): number of input channels, default=3
+        classes (int): number of model classes, default=80
+
+    Returns:
+        pytorch model
+    """
+    return create('yolov3-tiny', pretrained, channels, classes)
+
+
+def yolov4(pretrained=False, channels=3, classes=80):
+    """YOLOv4 model from https://github.com/Lornatang/YOLOv4-PyTorch
+
+    Arguments:
+        pretrained (bool): load pretrained weights into the model, default=False
+        channels (int): number of input channels, default=3
+        classes (int): number of model classes, default=80
+
+    Returns:
+        pytorch model
+    """
+    return create('yolov4', pretrained, channels, classes)
+
+
+def yolov5_small(pretrained=False, channels=3, classes=80):
     """YOLOv5-small model from https://github.com/ultralytics/yolov5
 
     Arguments:
@@ -54,10 +138,10 @@ def yolov5s(pretrained=False, channels=3, classes=80):
     Returns:
         pytorch model
     """
-    return create('yolov5s', pretrained, channels, classes)
+    return create('yolov5-small', pretrained, channels, classes)
 
 
-def yolov5m(pretrained=False, channels=3, classes=80):
+def yolov5_medium(pretrained=False, channels=3, classes=80):
     """YOLOv5-medium model from https://github.com/ultralytics/yolov5
 
     Arguments:
@@ -68,10 +152,10 @@ def yolov5m(pretrained=False, channels=3, classes=80):
     Returns:
         pytorch model
     """
-    return create('yolov5m', pretrained, channels, classes)
+    return create('yolov5-medium', pretrained, channels, classes)
 
 
-def yolov5l(pretrained=False, channels=3, classes=80):
+def yolov5_large(pretrained=False, channels=3, classes=80):
     """YOLOv5-large model from https://github.com/ultralytics/yolov5
 
     Arguments:
@@ -82,10 +166,10 @@ def yolov5l(pretrained=False, channels=3, classes=80):
     Returns:
         pytorch model
     """
-    return create('yolov5l', pretrained, channels, classes)
+    return create('yolov5-large', pretrained, channels, classes)
 
 
-def yolov5x(pretrained=False, channels=3, classes=80):
+def yolov5_xlarge(pretrained=False, channels=3, classes=80):
     """YOLOv5-xlarge model from https://github.com/ultralytics/yolov5
 
     Arguments:
@@ -96,4 +180,4 @@ def yolov5x(pretrained=False, channels=3, classes=80):
     Returns:
         pytorch model
     """
-    return create('yolov5x', pretrained, channels, classes)
+    return create('yolov5-xlarge', pretrained, channels, classes)
