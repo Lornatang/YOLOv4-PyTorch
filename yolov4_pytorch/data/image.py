@@ -22,19 +22,19 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from PIL import Image
-from .adjust import exif_size
-from ..utils.coords import xywh2xyxy
-from ..utils.coords import xyxy2xywh
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
+from .adjust import exif_size
 from .common import create_folder
 from .common import random_affine
 from .pad_resize import letterbox
+from ..utils.coords import xywh2xyxy
+from ..utils.coords import xyxy2xywh
 
 help_url = "https://github.com/Lornatang/YOLOv3-PyTorch#train-on-custom-dataset"
 image_formats = [".bmp", ".jpg", ".jpeg", ".png", ".tif", ".dng"]
-video_formats = [".mov", ".avi", ".mp4"]
+video_formats = ['.mov', '.avi', '.mp4', '.mpg', '.mpeg', '.m4v', '.wmv', '.mkv']
 
 
 class LoadImages:
@@ -67,7 +67,7 @@ class LoadImages:
             self.new_video(videos[0])
         else:
             self.capture = None
-        assert self.files_num > 0, "No images or videos found in `" + path + "`"
+        assert self.files_num > 0, f"No images or videos found in {path}. Supported formats are:\nimages: {image_formats}\nvideos: {video_formats}"
 
     def __iter__(self):
         self.count = 0
