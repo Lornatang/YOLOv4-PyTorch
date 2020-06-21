@@ -284,12 +284,12 @@ def evaluate(config_file,
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config-file", type=str, default="configs/COCO-Detection/yolov5s.yaml",
-                        help="Neural network profile path. (default: `configs/COCO-Detection/yolov5s.yaml`)")
+    parser.add_argument("--config-file", type=str, default="configs/COCO-Detection/yolov5-small.yaml",
+                        help="Neural network profile path. (default: `configs/COCO-Detection/yolov5-small.yaml`)")
     parser.add_argument("--data", type=str, default="data/coco2014.yaml",
                         help="Path to dataset. (default: data/coco2014.yaml)")
-    parser.add_argument("--weights", type=str, default="weights/yolov5s.pth",
-                        help="Initial weights path. (default: `weights/yolov5s.pth`)")
+    parser.add_argument("--weights", type=str, default="weights/yolov5-small.pth",
+                        help="Initial weights path. (default: `weights/yolov5-small.pth`)")
     parser.add_argument("--batch-size", type=int, default=32,
                         help="Size of each image batch. (default=32)")
     parser.add_argument("--workers", default=4, type=int, metavar="N",

@@ -387,8 +387,8 @@ if __name__ == "__main__":
                              "batch size of all GPUs on the current node when "
                              "using Data Parallel or Distributed Data Parallel"
                              "Effective batch size is 64 // batch_size.")
-    parser.add_argument("--config-file", type=str, default="configs/COCO-Detection/yolov5s.yaml",
-                        help="Neural network profile path. (default: `configs/COCO-Detection/yolov5s.yaml`)")
+    parser.add_argument("--config-file", type=str, default="configs/COCO-Detection/yolov5-small.yaml",
+                        help="Neural network profile path. (default: `configs/COCO-Detection/yolov5-small.yaml`)")
     parser.add_argument("--data", type=str, default="data/coco2014.yaml",
                         help="Path to dataset. (default: data/coco2014.yaml)")
     parser.add_argument("--workers", default=8, type=int, metavar="N",

@@ -182,12 +182,12 @@ def detect(save_image=False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config-file", type=str, default="configs/COCO-Detection/yolov5s.yaml",
-                        help="Neural network profile path. (default: `configs/COCO-Detection/yolov5s.yaml`)")
+    parser.add_argument("--config-file", type=str, default="configs/COCO-Detection/yolov5-small.yaml",
+                        help="Neural network profile path. (default: `configs/COCO-Detection/yolov5-small.yaml`)")
     parser.add_argument("--data", type=str, default="data/coco.yaml",
                         help="Types of objects detected. (default: data/coco.yaml)")
-    parser.add_argument("--weights", type=str, default="weights/yolov5s.pth",
-                        help="Model file weight path. (default: `weights/yolov5s.pth`)")
+    parser.add_argument("--weights", type=str, default="weights/yolov5-small.pth",
+                        help="Model file weight path. (default: `weights/yolov5-small.pth`)")
     parser.add_argument("--source", type=str, default="data/examples",
                         help="Image input source. (default: `data/examples`)")
     parser.add_argument("--output", type=str, default="outputs",
