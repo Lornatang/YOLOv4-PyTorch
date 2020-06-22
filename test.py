@@ -54,7 +54,8 @@ def evaluate(config_file,
              augment=False,
              verbose=False,
              model=None,
-             dataloader=None):
+             dataloader=None,
+             merge=False):
     # Initialize/load model and set device
     if model is None:
         training = False
