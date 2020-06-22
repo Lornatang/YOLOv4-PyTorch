@@ -54,8 +54,7 @@ def evaluate(config_file,
              augment=False,
              verbose=False,
              model=None,
-             dataloader=None,
-             fast=False):  # 0 fast, 1 accurate
+             dataloader=None):
     # Initialize/load model and set device
     if model is None:
         training = False
@@ -103,12 +102,13 @@ def evaluate(config_file,
     iouv = torch.linspace(0.5, 0.95, 10).to(device)  # iou vector for mAP@0.5:0.95
     niou = iouv.numel()
 
+    merge = args.merge  # use Merge NMS
+
     # Dataloader
     if dataloader is None:
         image = torch.zeros((1, 3, image_size, image_size), device=device)  # init img
         _ = model(image.half() if half else image.float()) if device.type != "cpu" else None  # run once
 
-        fast |= confidence_threshold > 0.001  # enable fast mode
         path = data["test"] if args.task == "test" else data["val"]  # path to val/test images
         dataset = LoadImagesAndLabels(path,
                                       image_size,
@@ -154,7 +154,7 @@ def evaluate(config_file,
             output = non_max_suppression(inf_out,
                                          confidence_threshold=confidence_threshold,
                                          iou_threshold=iou_threshold,
-                                         fast=fast)
+                                         merge=merge)
             t1 += time_synchronized() - t
 
         # Statistics per image
@@ -306,6 +306,7 @@ if __name__ == "__main__":
                         help="save a cocoapi-compatible JSON results file")
     parser.add_argument("--single-cls", action="store_true", help="train as single-class dataset")
     parser.add_argument("--augment", action="store_true", help="augmented for testing")
+    parser.add_argument("--merge", action="store_true", help="use Merge NMS")
     parser.add_argument("--verbose", action="store_true", help="report mAP by class")
 
     args = parser.parse_args()

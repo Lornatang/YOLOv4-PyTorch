@@ -23,7 +23,7 @@ from .iou import box_iou
 def non_max_suppression(prediction,
                         confidence_threshold=0.1,
                         iou_threshold=0.6,
-                        fast=False,
+                        merge=False,
                         classes=None,
                         agnostic=False):
     """
@@ -42,12 +42,7 @@ def non_max_suppression(prediction,
     max_det = 300  # maximum number of detections per image
     time_limit = 10.0  # seconds to quit after
     redundant = True  # require redundant detections
-    fast |= confidence_threshold > 0.001  # fast mode
     multi_label = nc > 1  # multiple labels per box (adds 0.5ms/image)
-    if fast:
-        merge = False
-    else:
-        merge = True  # merge for best mAP (adds 0.5ms/img)
 
     t = time.time()
     output = [None] * prediction.shape[0]
