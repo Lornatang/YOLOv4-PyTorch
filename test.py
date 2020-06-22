@@ -102,13 +102,12 @@ def evaluate(config_file,
     iouv = torch.linspace(0.5, 0.95, 10).to(device)  # iou vector for mAP@0.5:0.95
     niou = iouv.numel()
 
-    merge = args.merge  # use Merge NMS
-
     # Dataloader
     if dataloader is None:
         image = torch.zeros((1, 3, image_size, image_size), device=device)  # init img
         _ = model(image.half() if half else image.float()) if device.type != "cpu" else None  # run once
 
+        merge = args.merge  # use Merge NMS
         path = data["test"] if args.task == "test" else data["val"]  # path to val/test images
         dataset = LoadImagesAndLabels(path,
                                       image_size,

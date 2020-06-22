@@ -2,8 +2,8 @@
 Cython
 numpy==1.17
 opencv-python
-torch==1.4
-torchvision==0.5.0
+torch
+torchvision
 onnx
 matplotlib
 PyYAML>=5.3
