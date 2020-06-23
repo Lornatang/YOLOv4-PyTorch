@@ -112,7 +112,7 @@ def detect(save_image=False):
 
         # Apply NMS
         predict = non_max_suppression(predict, args.confidence_threshold, args.iou_threshold,
-                                      fast=True, classes=args.classes, agnostic=args.agnostic_nms)
+                                      classes=args.classes, agnostic=args.agnostic_nms)
         t2 = time_synchronized()
 
         # Apply Classifier
