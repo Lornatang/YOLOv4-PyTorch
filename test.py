@@ -329,9 +329,10 @@ if __name__ == "__main__":
                  args.verbose)
 
     elif args.task == "study":  # run over a range of settings and save/plot
-        for weights in ["yolov5s.pth", "yolov5m.pth", "yolov5l.pth", "yolov5x.pth"]:
+        for weights in ["yolov3-spp.pth", "yolov5-small.pth", "yolov5-medium.pth", "yolov5-large.pth",
+                        "yolov5-xlarge.pth"]:
             f = "study_%s_%s.txt" % (Path(args.data).stem, Path(weights).stem)  # filename to save to
-            x = list(range(288, 896, 64))  # x axis
+            x = list(range(352, 832, 64))  # x axis
             y = []  # y axis
             for i in x:  # image-size
                 print("\nRunning %s point %s..." % (f, i))
