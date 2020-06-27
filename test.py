@@ -91,9 +91,10 @@ def evaluate(config_file,
         training = True
         device = next(model.parameters()).device  # get model device
 
-        half = False
-        if half:
-            model.half()
+    # Half
+    half = device.type != "cpu" and torch.cuda.device_count() == 1  # half precision only supported on single-GPU
+    if half:
+        model.half()  # to FP16
 
     # Configure run
     model.eval()
@@ -115,6 +116,7 @@ def evaluate(config_file,
                                       batch_size,
                                       rect=True,  # rectangular inference
                                       single_cls=args.single_cls,  # single class mode
+                                      stride=int(max(model.stride)),  # model stride
                                       pad=0.5)  # padding
         batch_size = min(batch_size, len(dataset))
         dataloader = DataLoader(dataset,
@@ -276,6 +278,7 @@ def evaluate(config_file,
                   "See https://github.com/cocodataset/cocoapi/issues/356")
 
     # Return results
+    model.float()  # for training
     maps = np.zeros(num_classes) + map
     for i, c in enumerate(ap_class):
         maps[c] = ap[i]

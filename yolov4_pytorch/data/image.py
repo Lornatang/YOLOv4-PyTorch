@@ -141,7 +141,7 @@ class LoadImagesAndLabels(Dataset):
     """
 
     def __init__(self, path, image_size=416, batch_size=16, augment=False, hyper_parameters=None, rect=False,
-                 image_weights=False, cache_images=False, single_cls=False, pad=0.0):
+                 image_weights=False, cache_images=False, single_cls=False, stride=32, pad=0.0):
         try:
             path = str(Path(path))  # os-agnostic
             parent = str(Path(path).parent) + os.sep
@@ -209,7 +209,7 @@ class LoadImagesAndLabels(Dataset):
                 elif mini > 1:
                     shapes[i] = [1, 1 / mini]
 
-            self.batch_shapes = np.ceil(np.array(shapes) * image_size / 32. + pad).astype(np.int) * 32
+            self.batch_shapes = np.ceil(np.array(shapes) * image_size / stride + pad).astype(np.int) * stride
 
         # Preload labels (required for weighted CE training)
         self.images = [None] * image_files_num

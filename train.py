@@ -107,6 +107,7 @@ def train(parameters):
     model = YOLO(args.config_file).to(device)
     assert model.config_file[
                "num_classes"] == num_classes, f"{args.data} classes={num_classes} classes but {args.config_file} classes={model.config_file['num_classes']} classes "
+    model.names = data_dict["names"]
 
     # Image sizes
     gs = int(max(model.stride))  # grid size (max stride)
@@ -187,12 +188,14 @@ def train(parameters):
                                         hyper_parameters=parameters,  # augmentation hyper parameters
                                         rect=args.rect,  # rectangular training
                                         cache_images=args.cache_images,
-                                        single_cls=args.single_cls)
+                                        single_cls=args.single_cls,
+                                        stride=gs)
     test_dataset = LoadImagesAndLabels(test_path, image_size_test, batch_size,
                                        hyper_parameters=parameters,
                                        rect=True,
                                        cache_images=args.cache_images,
-                                       single_cls=args.single_cls)
+                                       single_cls=args.single_cls,
+                                       stride=gs)
     collate_fn = train_dataset.collate_fn
 
     max_class = np.concatenate(train_dataset.labels, 0)[:, 0].max()
@@ -218,7 +221,6 @@ def train(parameters):
     model.hyper_parameters = parameters  # attach hyper parameters to model
     model.gr = 1.0  # giou loss ratio (obj_loss = 1.0 or giou)
     model.class_weights = labels_to_class_weights(train_dataset.labels, num_classes).to(device)  # attach class weights
-    model.names = data_dict["names"]
 
     # class frequency
     labels = np.concatenate(train_dataset.labels, 0)
@@ -308,10 +310,11 @@ def train(parameters):
 
             # Plot
             if ni < 3:
-                filename = f"train_batch_{index}.png"
-                res = plot_images(images=images, targets=targets, paths=paths, filename=filename)
-                if tb_writer:
-                    tb_writer.add_image(filename, res, dataformats="HWC", global_step=epoch)
+                filename = f"train_batch_{ni}.png"
+                result = plot_images(images=images, targets=targets, paths=paths, filename=filename)
+                if tb_writer and result is not None:
+                    tb_writer.add_image(filename, result, dataformats="HWC", global_step=epoch)
+                    # tb_writer.add_graph(model, images)  # add model to tensorboard
 
         # Scheduler
         scheduler.step()
