@@ -278,7 +278,6 @@ def evaluate(config_file,
                   "See https://github.com/cocodataset/cocoapi/issues/356")
 
     # Return results
-    model.float()  # for training
     maps = np.zeros(num_classes) + map
     for i, c in enumerate(ap_class):
         maps[c] = ap[i]

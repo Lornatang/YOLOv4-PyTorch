@@ -94,7 +94,6 @@ def train(parameters):
     init_seeds(1)
     with open(args.data) as data_file:
         data_dict = yaml.load(data_file, Loader=yaml.FullLoader)  # model dict
-        print(data_dict)
     train_path = data_dict["train"]
     test_path = data_dict["val"]
     num_classes = 1 if args.single_cls else int(data_dict["num_classes"])  # number of classes
