@@ -86,13 +86,13 @@ def cutout(image, labels):
     return labels
 
 
-def random_affine(image, targets=(), degrees=10, translate=.1, scale=.1, shear=10, border=0):
+def random_affine(image, targets=(), degrees=10, translate=.1, scale=.1, shear=10, border=(0, 0)):
     # torchvision.transforms.RandomAffine(degrees=(-10, 10), translate=(.1, .1), scale=(.9, 1.1), shear=(-10, 10))
     # https://medium.com/uruvideo/dataset-augmentation-with-random-homographies-a8f4b44830d4
     # targets = [cls, xyxy]
 
-    height = image.shape[0] + border * 2
-    width = image.shape[1] + border * 2
+    height = image.shape[0] + border[0] * 2  # shape(h,w,c)
+    width = image.shape[1] + border[1] * 2
 
     # Rotation and Scale
     R = np.eye(3)
@@ -104,8 +104,8 @@ def random_affine(image, targets=(), degrees=10, translate=.1, scale=.1, shear=1
 
     # Translation
     T = np.eye(3)
-    T[0, 2] = random.uniform(-translate, translate) * image.shape[0] + border  # x translation (pixels)
-    T[1, 2] = random.uniform(-translate, translate) * image.shape[1] + border  # y translation (pixels)
+    T[0, 2] = random.uniform(-translate, translate) * image.shape[1] + border[1]  # x translation (pixels)
+    T[1, 2] = random.uniform(-translate, translate) * image.shape[0] + border[0]  # y translation (pixels)
 
     # Shear
     S = np.eye(3)
@@ -114,7 +114,7 @@ def random_affine(image, targets=(), degrees=10, translate=.1, scale=.1, shear=1
 
     # Combined rotation matrix
     M = S @ T @ R  # ORDER IS IMPORTANT HERE!!
-    if (border != 0) or (M != np.eye(3)).any():  # image changed
+    if (border[0] != 0) or (border[1] != 0) or (M != np.eye(3)).any():  # image changed
         image = cv2.warpAffine(image, M[:2], dsize=(width, height), flags=cv2.INTER_LINEAR, borderValue=(114, 114, 114))
 
     # Transform label coordinates

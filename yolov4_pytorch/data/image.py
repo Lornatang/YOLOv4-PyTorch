@@ -171,6 +171,8 @@ class LoadImagesAndLabels(Dataset):
         self.rect = False if image_weights else rect
         # load 4 images at a time into a mosaic (only during training)
         self.mosaic = self.augment and not self.rect
+        self.mosaic_border = [-image_size // 2, -image_size // 2]
+        self.stride = stride
 
         # Define labels
         self.label_files = [x.replace("images", "labels").replace(os.path.splitext(x)[-1], ".txt")
@@ -427,7 +429,7 @@ def load_mosaic(self, index):
 
     labels4 = []
     s = self.image_size
-    xc, yc = [int(random.uniform(s * 0.5, s * 1.5)) for _ in range(2)]  # mosaic center x, y
+    yc, xc = [int(random.uniform(-x, 2 * s + x)) for x in self.mosaic_border]  # mosaic center x, ycenter x, y
     indices = [index] + [random.randint(0, len(self.labels) - 1) for _ in range(3)]  # 3 additional image indices
     for i, index in enumerate(indices):
         # Load image
@@ -475,7 +477,7 @@ def load_mosaic(self, index):
                                     translate=self.hyper_parameters['translate'],
                                     scale=self.hyper_parameters['scale'],
                                     shear=self.hyper_parameters['shear'],
-                                    border=-s // 2)  # border to remove
+                                    border=self.mosaic_border)  # border to remove
 
     return image4, labels4
 
