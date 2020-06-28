@@ -33,8 +33,6 @@ from yolov4_pytorch.utils import clip_coords
 from yolov4_pytorch.utils import coco80_to_coco91_class
 from yolov4_pytorch.utils import compute_loss
 from yolov4_pytorch.utils import non_max_suppression
-from yolov4_pytorch.utils import output_to_target
-from yolov4_pytorch.utils import plot_images
 from yolov4_pytorch.utils import scale_coords
 from yolov4_pytorch.utils import select_device
 from yolov4_pytorch.utils import time_synchronized
@@ -61,10 +59,6 @@ def evaluate(config_file,
         training = False
         device = select_device(args.device, batch_size=batch_size)
         half = device.type != "cpu"  # half precision only supported on CUDA
-
-        # Remove previous
-        for filename in glob.glob("test_batch_*.png"):
-            os.remove(filename)
 
         # Configure
         with open(args.data) as data_file:
@@ -218,13 +212,6 @@ def evaluate(config_file,
 
             # Append statistics (correct, conf, pcls, tcls)
             stats.append((correct.cpu(), pred[:, 4].cpu(), pred[:, 5].cpu(), tcls))
-
-        # Plot images
-        if batch_i < 1:
-            filename = f"test_batch_{batch_i}_gt.png"  # filename
-            plot_images(images, targets, paths, filename, names)  # ground truth
-            filename = f"test_batch_{batch_i}_pred.png"
-            plot_images(images, output_to_target(output, width, height), paths, filename, names)  # predictions
 
     # Compute statistics
     stats = [np.concatenate(x, 0) for x in zip(*stats)]  # to numpy

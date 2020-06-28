@@ -39,7 +39,6 @@ from yolov4_pytorch.utils import fitness
 from yolov4_pytorch.utils import init_seeds
 from yolov4_pytorch.utils import labels_to_class_weights
 from yolov4_pytorch.utils import labels_to_image_weights
-from yolov4_pytorch.utils import plot_images
 from yolov4_pytorch.utils import plot_labels
 from yolov4_pytorch.utils import plot_results
 from yolov4_pytorch.utils import print_mutation
@@ -99,8 +98,7 @@ def train(parameters):
     num_classes = 1 if args.single_cls else int(data_dict["num_classes"])  # number of classes
 
     # Remove previous results
-    for old_file in glob.glob("*_batch_*.png") + glob.glob("result.txt"):
-        os.remove(old_file)
+    os.remove("result.txt")
 
     # Create model
     model = YOLO(args.config_file).to(device)
@@ -306,14 +304,6 @@ def train(parameters):
             s = ("%10s" * 2 + "%10.4g" * 6) % (
                 "%g/%g" % (epoch, epochs - 1), memory, *mean_losses, targets.shape[0], images.shape[-1])
             progress_bar.set_description(s)
-
-            # Plot
-            if ni < 3:
-                filename = f"train_batch_{ni}.png"
-                result = plot_images(images=images, targets=targets, paths=paths, filename=filename)
-                if tb_writer and result is not None:
-                    tb_writer.add_image(filename, result, dataformats="HWC", global_step=epoch)
-                    # tb_writer.add_graph(model, images)  # add model to tensorboard
 
         # Scheduler
         scheduler.step()
