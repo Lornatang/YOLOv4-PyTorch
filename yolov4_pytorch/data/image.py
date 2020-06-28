@@ -45,7 +45,7 @@ class LoadImages:
         image_size (int): Size of loaded pictures. (default:``416``).
     """
 
-    def __init__(self, dataroot, image_size=416):
+    def __init__(self, dataroot, image_size=640):
 
         path = str(Path(dataroot))
         files = []
@@ -140,7 +140,7 @@ class LoadImagesAndLabels(Dataset):
         pad(float, optional): Represents how many rows / columns are filled in each dimension. (default:``0.0``)
     """
 
-    def __init__(self, path, image_size=416, batch_size=16, augment=False, hyper_parameters=None, rect=False,
+    def __init__(self, path, image_size=640, batch_size=16, augment=False, hyper_parameters=None, rect=False,
                  image_weights=False, cache_images=False, single_cls=False, stride=32, pad=0.0):
         try:
             path = str(Path(path))  # os-agnostic

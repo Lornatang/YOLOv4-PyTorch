@@ -29,7 +29,7 @@ class LoadWebCam:
         image_size (int): Size of loaded pictures. (default:``416``).
     """
 
-    def __init__(self, pipe=0, image_size=416):
+    def __init__(self, pipe=0, image_size=640):
         self.image_size = image_size
 
         if pipe == "0":
@@ -90,7 +90,7 @@ class LoadStreams:
         image_size (int): Image size in default data flow. (default:``416``).
     """
 
-    def __init__(self, sources="streams.txt", image_size=416):
+    def __init__(self, sources="streams.txt", image_size=640):
         self.mode = "images"
         self.image_size = image_size
 
