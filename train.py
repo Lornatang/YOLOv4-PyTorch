@@ -98,7 +98,8 @@ def train(parameters):
     num_classes = 1 if args.single_cls else int(data_dict["num_classes"])  # number of classes
 
     # Remove previous results
-    os.remove("result.txt")
+    for f in glob.glob("results.txt"):
+        os.remove(f)
 
     # Create model
     model = YOLO(args.config_file).to(device)
@@ -402,8 +403,8 @@ if __name__ == "__main__":
                         help="cache images for faster training.")
     parser.add_argument("--weights", type=str, default="",
                         help="Initial weights path. (default: ``)")
-    parser.add_argument("--device", default="0",
-                        help="device id (i.e. 0 or 0,1 or cpu). (default: `0`)")
+    parser.add_argument("--device", default="",
+                        help="device id (i.e. 0 or 0,1 or cpu).")
     parser.add_argument("--single-cls", action="store_true",
                         help="train as single-class dataset")
     args = parser.parse_args()

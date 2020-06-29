@@ -203,8 +203,8 @@ if __name__ == "__main__":
     parser.add_argument("--fourcc", type=str, default="mp4v",
                         help="output video codec (verify ffmpeg support). (default=mp4v)")
     parser.add_argument("--half", action="store_true", help="half precision FP16 inference")
-    parser.add_argument("--device", default="",
-                        help="device id (i.e. 0 or 0,1) or cpu. (default="")")
+    parser.add_argument("--device", default="0",
+                        help="device id (i.e. 0 or 0,1) or cpu. (default: `0`).")
     parser.add_argument("--view-image", action="store_true",
                         help="Display results")
     parser.add_argument("--save-txt", action="store_true",
