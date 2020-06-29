@@ -402,8 +402,8 @@ if __name__ == "__main__":
                         help="cache images for faster training.")
     parser.add_argument("--weights", type=str, default="",
                         help="Initial weights path. (default: ``)")
-    parser.add_argument("--device", default="",
-                        help="device id (i.e. 0 or 0,1 or cpu)")
+    parser.add_argument("--device", default="0",
+                        help="device id (i.e. 0 or 0,1 or cpu). (default: `0`)")
     parser.add_argument("--single-cls", action="store_true",
                         help="train as single-class dataset")
     args = parser.parse_args()
