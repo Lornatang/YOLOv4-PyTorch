@@ -39,7 +39,6 @@ from yolov4_pytorch.utils import fitness
 from yolov4_pytorch.utils import init_seeds
 from yolov4_pytorch.utils import labels_to_class_weights
 from yolov4_pytorch.utils import labels_to_image_weights
-from yolov4_pytorch.utils import plot_labels
 from yolov4_pytorch.utils import plot_results
 from yolov4_pytorch.utils import print_mutation
 from yolov4_pytorch.utils import select_device
