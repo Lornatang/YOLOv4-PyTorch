@@ -289,7 +289,7 @@ if __name__ == "__main__":
                         help="Object confidence threshold. (default=0.001)")
     parser.add_argument("--iou-threshold", type=float, default=0.65,
                         help="IOU threshold for NMS. (default=0.65)")
-    parser.add_argument("--task", default="eval", help="`eval`, `study`, `test`")
+    parser.add_argument("--task", default="test", help="`eval`, `study`, `test`")
     parser.add_argument("--device", default="0", help="device id (i.e. 0 or 0,1) or cpu. (default: `0`)")
     parser.add_argument("--save-json", action="store_true",
                         help="save a cocoapi-compatible JSON results file")
