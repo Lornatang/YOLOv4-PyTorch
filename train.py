@@ -224,7 +224,6 @@ def train(parameters):
     labels = np.concatenate(train_dataset.labels, 0)
     c = torch.tensor(labels[:, 0])  # classes
     if tb_writer:
-        plot_labels(labels)
         tb_writer.add_histogram("classes", c, 0)
 
     # Exponential moving average
