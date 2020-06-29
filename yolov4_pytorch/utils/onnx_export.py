@@ -21,10 +21,11 @@ import torch
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', type=str, default='../../weights/yolov5s.pth', help='weights path')
+    parser.add_argument('--weights', type=str, default='../../weights/yolov5-small.pth', help='weights path')
     parser.add_argument('--image-size', nargs='+', type=int, default=[640, 640], help='image size')
     parser.add_argument('--batch-size', type=int, default=1, help='batch size')
     opt = parser.parse_args()
+    opt.image_size *= 2 if len(opt.image_size) == 1 else 1
     print(opt)
 
     # Parameters
