@@ -143,8 +143,9 @@ def train(parameters):
             model.load_state_dict(checkpoint["state_dict"], strict=False)
             model.float()
         except KeyError as e:
-            s = f"{args.weights} is not compatible with {args.config_file}. Specify --weights "" or specify a " \
-                f"--config-file compatible with {args.weights}. "
+            s = f"{args.weights} is not compatible with {args.config_file}. This may be due to model differences or " \
+                f"{args.weights} may be out of date. Please delete or update {args.weights} and try again, " \
+                f"or use --weights '' to train from scatch."
             raise KeyError(s) from e
 
         # load optimizer
@@ -158,6 +159,10 @@ def train(parameters):
                 file.write(checkpoint["training_results"])  # write results.txt
 
         start_epoch = checkpoint["epoch"] + 1
+        if epochs < start_epoch:
+            print(f"{args.weights} has been trained for {checkpoint['epoch']} epochs. "
+                  f"Fine-tuning for {epochs} additional epochs.")
+            epochs += checkpoint['epoch']  # finetune additional epochs
         del checkpoint
 
     # Mixed precision training https://github.com/NVIDIA/apex
@@ -407,7 +412,7 @@ if __name__ == "__main__":
                         help="train as single-class dataset")
     args = parser.parse_args()
 
-    args.weights = "weights/checkpoint.pth" if args.resume else args.weights
+    args.weights = "weights/checkpoint.pth" if args.resume and not args.weights else args.weights
 
     print(args)
     args.image_size.extend([args.image_size[-1]] * (2 - len(args.image_size)))  # extend to 2 sizes (train, test)

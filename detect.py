@@ -62,6 +62,8 @@ def detect(save_image=False):
     model.float()
     model.eval()
 
+    image_size = check_image_size(image_size, s=model.model[-1].stride.max())  # check image_size
+
     # Second-stage classifier
     classify = False
     model_classify = None

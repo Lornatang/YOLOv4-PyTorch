@@ -25,7 +25,7 @@ from ..utils.common import make_divisible
 
 def check_image_size(image_size, s=32):
     # Verify img_size is a multiple of stride s
-    new_size = make_divisible(image_size, s)  # ceil gs-multiple
+    new_size = make_divisible(image_size, int(s))  # ceil gs-multiple
     if new_size != image_size:
         print(f"WARNING: --image-size {image_size} must be multiple of max stride {s}, updating to {new_size}")
     return new_size

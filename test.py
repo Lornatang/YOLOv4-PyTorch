@@ -76,6 +76,8 @@ def evaluate(config_file,
         model.fuse()
         model.to(device)
 
+        image_size = check_image_size(image_size, s=model.model[-1].stride.max())  # check image_size
+
         model_info(model)
 
         if half:
@@ -299,7 +301,6 @@ if __name__ == "__main__":
     parser.add_argument("--verbose", action="store_true", help="report mAP by class")
 
     args = parser.parse_args()
-    args.image_size = check_image_size(args.image_size)
     args.save_json = args.save_json or args.data.endswith("coco2014.yaml") or args.data.endswith("coco2017.yaml")
     print(args)
 
