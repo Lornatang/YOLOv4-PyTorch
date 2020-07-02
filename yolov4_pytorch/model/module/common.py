@@ -21,6 +21,11 @@ import torch.nn as nn
 from .conv import Conv
 
 
+def autopad(k):
+    # Pad to 'same'
+    return k // 2 if isinstance(k, int) else [x // 2 for x in k]  # auto-pad
+
+
 class Concat(nn.Module):
     # Concatenate a list of tensors along dimension
     def __init__(self, dimension=1):
@@ -39,9 +44,9 @@ class Flatten(nn.Module):
 
 class Focus(nn.Module):
     # Focus wh information into c-space
-    def __init__(self, c1, c2, k=1):
+    def __init__(self, c1, c2, k=1, s=1, p=None, g=1, act=True):  # ch_in, ch_out, kernel, stride, padding, groups
         super(Focus, self).__init__()
-        self.conv = Conv(c1 * 4, c2, k, 1)
+        self.conv = Conv(c1 * 4, c2, k, s, p, g, act)
 
     def forward(self, x):  # x(b,c,w,h) -> y(b,4c,w/2,h/2)
         return self.conv(torch.cat([x[..., ::2, ::2], x[..., 1::2, ::2], x[..., ::2, 1::2], x[..., 1::2, 1::2]], 1))

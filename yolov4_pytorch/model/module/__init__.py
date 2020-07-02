@@ -22,9 +22,12 @@ from .common import Concat
 from .common import Flatten
 from .common import Focus
 from .common import Sum
+from .common import autopad
+from .conv import C3
 from .conv import Conv
 from .conv import ConvBNReLU
 from .conv import ConvPlus
+from .conv import CrossConv
 from .conv import DWConv
 from .conv import GhostConv
 from .conv import MixConv2d
@@ -51,9 +54,12 @@ __all__ = [
     "Flatten",
     "Focus",
     "Sum",
+    "autopad",
+    "C3",
     "Conv",
     "ConvBNReLU",
     "ConvPlus",
+    "CrossConv",
     "DWConv",
     "GhostConv",
     "MixConv2d",
