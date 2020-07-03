@@ -321,7 +321,7 @@ def train(parameters):
                                             batch_size=batch_size,
                                             image_size=image_size_test,
                                             save_json=final_epoch,
-                                            model=ema.ema.module if hasattr(model, 'module') else ema.ema,
+                                            model=ema.ema,
                                             single_cls=args.single_cls,
                                             dataloader=test_dataloader)
 
@@ -349,8 +349,7 @@ def train(parameters):
                 state = {"epoch": epoch,
                          "best_fitness": best_fitness,
                          "training_results": f.read(),
-                         "state_dict": ema.ema.module.state_dict() if hasattr(model,
-                                                                              "module") else ema.ema.state_dict(),
+                         "state_dict": ema.ema,
                          "optimizer": None if final_epoch else optimizer.state_dict()}
 
             # Save last, best and delete
@@ -359,8 +358,7 @@ def train(parameters):
                 state = {"epoch": -1,
                          "best_fitness": None,
                          "training_results": None,
-                         "state_dict": ema.ema.module.state_dict() if hasattr(model,
-                                                                              "module") else ema.ema.state_dict(),
+                         "state_dict": ema.ema,
                          "optimizer": None}
                 torch.save(state, "weights/model_best.pth")
             del state
