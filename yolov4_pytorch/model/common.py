@@ -11,6 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+from copy import deepcopy
+
 import torch
 
 ONNX_EXPORT = False
@@ -29,10 +31,10 @@ def model_info(model, verbose=False):
 
     try:  # FLOPS
         from thop import profile
-        macs, _ = profile(model, inputs=(torch.zeros(1, 3, 480, 640),), verbose=False)
-        FLOPs = ', %.1f GFLOPS' % (macs / 1E9 * 2)
+        flops = profile(deepcopy(model), inputs=(torch.zeros(1, 3, 64, 64),), verbose=False)[0] / 1E9 * 2
+        FLOPs = f"{flops * 100:.1f} GFLOPS",  # 640x640 FLOPS
     except:
-        FLOPs = ''
+        FLOPs = ""
 
     print(f"Model Summary: {len(list(model.parameters()))} layers, "
           f"{parameter_num} parameters, {gradient_num} gradients{FLOPs}")

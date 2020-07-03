@@ -22,7 +22,6 @@ from .common import Concat
 from .common import Flatten
 from .common import Focus
 from .common import Sum
-from .common import autopad
 from .conv import C3
 from .conv import Conv
 from .conv import ConvBNReLU
@@ -32,6 +31,7 @@ from .conv import DWConv
 from .conv import GhostConv
 from .conv import MixConv2d
 from .conv import MobileNetConv
+from .conv import autopad
 from .head import SPP
 from .layer import Detect
 from .layer import YOLO
@@ -54,7 +54,6 @@ __all__ = [
     "Flatten",
     "Focus",
     "Sum",
-    "autopad",
     "C3",
     "Conv",
     "ConvBNReLU",
@@ -64,6 +63,7 @@ __all__ = [
     "GhostConv",
     "MixConv2d",
     "MobileNetConv",
+    "autopad",
     "SPP",
     "Detect",
     "YOLO",

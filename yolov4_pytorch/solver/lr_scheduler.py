@@ -17,8 +17,9 @@ from copy import deepcopy
 from typing import List
 
 import torch
-import torch.nn as nn
 from torchvision.models.resnet import ResNet
+
+from ..utils import is_parallel
 
 
 class CosineDecayLR(object):
@@ -91,7 +92,7 @@ class ModelEMA:
         self.updates += 1
         d = self.decay(self.updates)
         with torch.no_grad():
-            if type(model) in (nn.parallel.DataParallel, nn.parallel.DistributedDataParallel):
+            if is_parallel(model):
                 msd, esd = model.module.state_dict(), self.ema.module.state_dict()
             else:
                 msd, esd = model.state_dict(), self.ema.state_dict()
@@ -102,10 +103,11 @@ class ModelEMA:
                     v += (1. - d) * msd[k].detach()
 
     def update_attr(self, model):
-        # Assign attributes (which may change during training)
-        for k in model.__dict__.keys():
-            if not k.startswith('_'):
-                setattr(self.ema, k, getattr(model, k))
+        # Update class attributes
+        ema = self.ema.module if is_parallel(model) else self.ema
+        for k, v in model.__dict__.items():
+            if not k.startswith("_") and k != "module":
+                setattr(ema, k, v)
 
 
 # ------------------------------------------------------------------------------------------------------------- #

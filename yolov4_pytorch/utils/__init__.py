@@ -22,6 +22,7 @@ from .coords import scale_coords
 from .coords import xywh2xyxy
 from .coords import xyxy2xywh
 from .device import init_seeds
+from .device import is_parallel
 from .device import select_device
 from .device import time_synchronized
 from .iou import bbox_iou
@@ -54,6 +55,7 @@ __all__ = [
     "xywh2xyxy",
     "xyxy2xywh",
     "init_seeds",
+    "is_parallel",
     "select_device",
     "time_synchronized",
     "bbox_iou",

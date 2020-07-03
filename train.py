@@ -104,7 +104,6 @@ def train(parameters):
     model = YOLO(args.config_file).to(device)
     assert model.config_file[
                "num_classes"] == num_classes, f"{args.data} classes={num_classes} classes but {args.config_file} classes={model.config_file['num_classes']} classes "
-    model.names = data_dict["names"]
 
     # Image sizes
     gs = int(max(model.stride))  # grid size (max stride)
@@ -145,7 +144,7 @@ def train(parameters):
         except KeyError as e:
             s = f"{args.weights} is not compatible with {args.config_file}. This may be due to model differences or " \
                 f"{args.weights} may be out of date. Please delete or update {args.weights} and try again, " \
-                f"or use --weights '' to train from scatch."
+                f"or use --weights '' to train from scratch."
             raise KeyError(s) from e
 
         # load optimizer
@@ -223,6 +222,7 @@ def train(parameters):
     model.hyper_parameters = parameters  # attach hyper parameters to model
     model.gr = 1.0  # giou loss ratio (obj_loss = 1.0 or giou)
     model.class_weights = labels_to_class_weights(train_dataset.labels, num_classes).to(device)  # attach class weights
+    model.names = data_dict["names"]
 
     # class frequency
     labels = np.concatenate(train_dataset.labels, 0)
@@ -321,7 +321,7 @@ def train(parameters):
                                             batch_size=batch_size,
                                             image_size=image_size_test,
                                             save_json=final_epoch,
-                                            model=ema.ema,
+                                            model=ema.ema.module if hasattr(model, 'module') else ema.ema,
                                             single_cls=args.single_cls,
                                             dataloader=test_dataloader)
 
