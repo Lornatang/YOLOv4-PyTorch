@@ -21,7 +21,7 @@ from .common import Concat
 from .common import Focus
 from .conv import Conv
 from .conv import ConvBNReLU
-from .conv import ConvPlus
+from .conv import CrossConv
 from .conv import DWConv
 from .conv import MixConv2d
 from .conv import MobileNetConv
@@ -198,8 +198,8 @@ def parse_model(model_dict, channels):
                 pass
 
         number = max(round(number * depth_multiple), 1) if number > 1 else number  # depth gain
-        if module in [nn.Conv2d, Conv, Bottleneck, SPP, DWConv, MixConv2d, Focus, ConvPlus, BottleneckCSP,
-                      ResNetBottleneck, MobileNetConv, ConvBNReLU]:
+        if module in [nn.Conv2d, Conv, Bottleneck, SPP, DWConv, MixConv2d, Focus, BottleneckCSP,
+                      ResNetBottleneck, MobileNetConv, ConvBNReLU, CrossConv]:
             in_channels, out_channels = channels[f], args[0]
 
             # Normal

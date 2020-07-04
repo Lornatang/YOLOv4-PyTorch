@@ -25,7 +25,6 @@ from .common import Sum
 from .conv import C3
 from .conv import Conv
 from .conv import ConvBNReLU
-from .conv import ConvPlus
 from .conv import CrossConv
 from .conv import DWConv
 from .conv import GhostConv
@@ -57,7 +56,6 @@ __all__ = [
     "C3",
     "Conv",
     "ConvBNReLU",
-    "ConvPlus",
     "CrossConv",
     "DWConv",
     "GhostConv",

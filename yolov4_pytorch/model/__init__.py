@@ -21,7 +21,6 @@ from .module import Bottleneck
 from .module import BottleneckCSP
 from .module import Concat
 from .module import Conv
-from .module import ConvPlus
 from .module import DWConv
 from .module import Detect
 from .module import Flatten
@@ -60,7 +59,6 @@ __all__ = [
     "Focus",
     "Sum",
     "Conv",
-    "ConvPlus",
     "DWConv",
     "GhostConv",
     "MixConv2d",
