@@ -88,16 +88,15 @@ def build_targets(p, targets, model):
             a, t = at[j], t.repeat(na, 1, 1)[j]  # filter
 
             # overlaps
+            g = 0.5  # offset
             gxy = t[:, 2:4]  # grid xy
             z = torch.zeros_like(gxy)
             if style == 'rect2':
-                g = 0.2  # offset
                 j, k = ((gxy % 1. < g) & (gxy > 1.)).T
                 a, t = torch.cat((a, a[j], a[k]), 0), torch.cat((t, t[j], t[k]), 0)
                 offsets = torch.cat((z, z[j] + off[0], z[k] + off[1]), 0) * g
 
             elif style == 'rect4':
-                g = 0.5  # offset
                 j, k = ((gxy % 1. < g) & (gxy > 1.)).T
                 l, m = ((gxy % 1. > (1 - g)) & (gxy < (gain[[2, 3]] - 1.))).T
                 a, t = torch.cat((a, a[j], a[k], a[l], a[m]), 0), torch.cat((t, t[j], t[k], t[l], t[m]), 0)
@@ -140,6 +139,7 @@ def compute_loss(p, targets, model):  # predictions, targets, model
 
     # per output
     nt = 0  # targets
+    balance = [1.0, 1.0, 1.0]
     for i, pi in enumerate(p):  # layer index, layer predictions
         b, a, gj, gi = indices[i]  # image, anchor, gridy, gridx
         tobj = torch.zeros_like(pi[..., 0])  # target obj
@@ -169,11 +169,12 @@ def compute_loss(p, targets, model):  # predictions, targets, model
             # with open('targets.txt', 'a') as file:
             #     [file.write('%11.5g ' * 4 % tuple(x) + '\n') for x in torch.cat((txy[i], twh[i]), 1)]
 
-        lobj += BCEobj(pi[..., 4], tobj)  # obj loss
+        lobj += BCEobj(pi[..., 4], tobj) * balance[i]  # obj loss
 
-    lbox *= h['giou']
-    lobj *= h['obj']
-    lcls *= h['classes']
+    s = 3 / (i + 1)  # output count scaling
+    lbox *= h['giou'] * s
+    lobj *= h['obj'] * s
+    lcls *= h['classes'] * s
     bs = tobj.shape[0]  # batch size
     if red == 'sum':
         g = 3.0  # loss gain
