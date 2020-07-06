@@ -17,9 +17,8 @@ from copy import deepcopy
 from typing import List
 
 import torch
+import torch.nn as nn
 from torchvision.models.resnet import ResNet
-
-from ..utils import is_parallel
 
 
 class CosineDecayLR(object):
@@ -73,15 +72,15 @@ class ModelEMA:
     process, or after the training stops converging.
     This class is sensitive where it is initialized in the sequence of model init,
     GPU assignment and distributed training wrappers.
-    I've tested with the sequence in my own train.py for torch.DataParallel, apex.DDP, and single-GPU.
     """
 
-    def __init__(self, model, decay=0.9999, device=""):
-        # Create EMA
-        self.ema = deepcopy(model.module if is_parallel(model) else model).half()  # FP16 EMA
+    def __init__(self, model, decay=0.9999, device=''):
+        # make a copy of the model for accumulating moving average of weights
+        self.ema = deepcopy(model)
         self.ema.eval()
         self.updates = 0  # number of EMA updates
-        self.decay = lambda x: decay * (1 - math.exp(-x / 2000))  # decay exponential ramp (to help early epochs)
+        # decay exponential ramp (to help early epochs)
+        self.decay = lambda x: decay * (1 - math.exp(-x / 2000))
         self.device = device  # perform ema on different device from model if set
         if device:
             self.ema.to(device=device)
@@ -89,22 +88,24 @@ class ModelEMA:
             p.requires_grad_(False)
 
     def update(self, model):
-        # Update EMA parameters
+        self.updates += 1
+        d = self.decay(self.updates)
         with torch.no_grad():
-            self.updates += 1
-            d = self.decay(self.updates)
+            if type(model) in (nn.parallel.DataParallel, nn.parallel.DistributedDataParallel):
+                msd, esd = model.module.state_dict(), self.ema.module.state_dict()
+            else:
+                msd, esd = model.state_dict(), self.ema.state_dict()
 
-            msd = model.module.state_dict() if is_parallel(model) else model.state_dict()  # model state_dict
-            for k, v in self.ema.state_dict().items():
+            for k, v in esd.items():
                 if v.dtype.is_floating_point:
                     v *= d
                     v += (1. - d) * msd[k].detach()
 
     def update_attr(self, model):
-        # Update EMA attributes
-        for k, v in model.__dict__.items():
-            if not k.startswith("_") and k != "module":
-                setattr(self.ema, k, v)
+        # Assign attributes (which may change during training)
+        for k in model.__dict__.keys():
+            if not k.startswith('_'):
+                setattr(self.ema, k, getattr(model, k))
 
 
 # ------------------------------------------------------------------------------------------------------------- #
