@@ -23,12 +23,11 @@ from .pad_resize import letterbox
 
 class LoadWebCam:
     """ Use only in the inference phase
-    Load the Camera in the local and convert them to the corresponding format.
-    Args:
-        pipe (int): Device index of camera. (default:``0``).
-        image_size (int): Size of loaded pictures. (default:``416``).
-    """
-
+        Load the Camera in the local and convert them to the corresponding format.
+        Args:
+            pipe (int): Device index of camera. (default:``0``).
+            image_size (int): Size of loaded pictures. (default:``416``).
+        """
     def __init__(self, pipe=0, image_size=640):
         self.image_size = image_size
 
@@ -113,7 +112,7 @@ class LoadStreams:
             fps = cap.get(cv2.CAP_PROP_FPS) % 100
             _, self.images[i] = cap.read()  # guarantee first frame
             thread = Thread(target=self.update, args=([i, cap]), daemon=True)
-            print(" success (%gx%g at %.2f FPS)." % (w, h, fps))
+            print(f" success ({w}x{h} at {fps:.2f} FPS).")
             thread.start()
         print("")  # newline
 

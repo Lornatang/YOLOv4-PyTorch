@@ -32,7 +32,7 @@ from .pad_resize import letterbox
 from ..utils.coords import xywh2xyxy
 from ..utils.coords import xyxy2xywh
 
-help_url = "https://github.com/Lornatang/YOLOv3-PyTorch#train-on-custom-dataset"
+help_url = "https://github.com/Lornatang/YOLOv4-PyTorch#train-on-custom-dataset"
 image_formats = [".bmp", ".jpg", ".jpeg", ".png", ".tif", ".dng"]
 video_formats = ['.mov', '.avi', '.mp4', '.mpg', '.mpeg', '.m4v', '.wmv', '.mkv']
 
@@ -46,13 +46,16 @@ class LoadImages:
     """
 
     def __init__(self, dataroot, image_size=640):
-
-        path = str(Path(dataroot))
-        files = []
-        if os.path.isdir(path):
-            files = sorted(glob.glob(os.path.join(path, "*.*")))
+        path = str(Path(dataroot))  # os-agnostic
+        path = os.path.abspath(path)  # absolute path
+        if "*" in path:
+            files = sorted(glob.glob(path))  # glob
+        elif os.path.isdir(path):
+            files = sorted(glob.glob(os.path.join(path, "*.*")))  # dir
         elif os.path.isfile(path):
-            files = [path]
+            files = [path]  # files
+        else:
+            raise Exception(f"ERROR: {path} does not exist")
 
         images = [x for x in files if os.path.splitext(x)[-1].lower() in image_formats]
         videos = [x for x in files if os.path.splitext(x)[-1].lower() in video_formats]
@@ -64,7 +67,7 @@ class LoadImages:
         self.video_flag = [False] * image_num + [True] * video_num
         self.mode = "images"
         if any(videos):
-            self.new_video(videos[0])
+            self.new_video(videos[0])  # new video
         else:
             self.capture = None
         assert self.files_num > 0, f"No images or videos found in {path}. Supported formats are:\nimages: {image_formats}\nvideos: {video_formats}"
@@ -470,6 +473,9 @@ def load_mosaic(self, index):
         # np.clip(labels4[:, 1:] - s / 2, 0, s, out=labels4[:, 1:])  # use with center crop
         np.clip(labels4[:, 1:], 0, 2 * s, out=labels4[:, 1:])  # use with random_affine
 
+        # Replicate
+        # image4, labels4 = replicate(img4, labels4)
+
     # Augment
     # img4 = img4[s // 2: int(s * 1.5), s // 2:int(s * 1.5)]  # center crop (WARNING, requires box pruning)
     image4, labels4 = random_affine(image4, labels4,
@@ -482,7 +488,7 @@ def load_mosaic(self, index):
     return image4, labels4
 
 
-def scale_image(image, ratio=1.0, same_shape=True):  # img(16,3,256,416), r=ratio
+def scale_image(image, ratio=1.0, same_shape=False):  # image(16,3,256,416), r=ratio
     # scales img(bs,3,y,x) by ratio
     height, width = image.shape[2:]
     size = (int(height * ratio), int(width * ratio))  # new size
