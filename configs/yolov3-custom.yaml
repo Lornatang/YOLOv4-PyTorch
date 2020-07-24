@@ -1,4 +1,3 @@
-
 # parameters
 num_classes: 3  # number of classes
 depth_multiple: 1.0  # model depth multiple
