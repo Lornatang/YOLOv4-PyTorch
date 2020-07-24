@@ -31,12 +31,6 @@ class Concat(nn.Module):
         return torch.cat(x, self.d)
 
 
-class Flatten(nn.Module):
-    # Use after nn.AdaptiveAvgPool2d(1) to remove last 2 dimensions
-    def forward(self, x):
-        return x.view(x.size(0), -1)
-
-
 class Focus(nn.Module):
     # Focus wh information into c-space
     def __init__(self, c1, c2, k=1, s=1, p=None, g=1, act=True):  # ch_in, ch_out, kernel, stride, padding, groups
@@ -47,22 +41,12 @@ class Focus(nn.Module):
         return self.conv(torch.cat([x[..., ::2, ::2], x[..., 1::2, ::2], x[..., ::2, 1::2], x[..., 1::2, 1::2]], 1))
 
 
-class Sum(nn.Module):
-    # Weighted sum of 2 or more layers https://arxiv.org/abs/1911.09070
-    def __init__(self, n, weight=False):  # n: number of inputs
-        super(Sum, self).__init__()
-        self.weight = weight  # apply weights boolean
-        self.iter = range(n - 1)  # iter object
-        if weight:
-            self.w = nn.Parameter(-torch.arange(1., n) / 2, requires_grad=True)  # layer weights
-
-    def forward(self, x):
-        y = x[0]  # no weight
-        if self.weight:
-            w = torch.sigmoid(self.w) * 2
-            for i in self.iter:
-                y = y + x[i + 1] * w[i]
-        else:
-            for i in self.iter:
-                y = y + x[i + 1]
-        return y
+def check_anchor_order(m):
+    # Check anchor order against stride order for YOLOv5 Detect() module m, and correct if necessary
+    a = m.anchor_grid.prod(-1).view(-1)  # anchor area
+    da = a[-1] - a[0]  # delta a
+    ds = m.stride[-1] - m.stride[0]  # delta s
+    if da.sign() != ds.sign():  # same order
+        print('Reversing anchor order')
+        m.anchors[:] = m.anchors.flip(0)
+        m.anchor_grid[:] = m.anchor_grid.flip(0)

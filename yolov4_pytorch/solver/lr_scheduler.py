@@ -31,7 +31,6 @@ def copy_attr(a, b, include=(), exclude=()):
             setattr(a, k, v)
 
 
-
 class CosineDecayLR(object):
     def __init__(self, optimizer, max_batches, lr, warmup):
         """ Cosine decay scheduler about all batches training.

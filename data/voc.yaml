@@ -2,7 +2,7 @@ train: data/voc2007/train.txt
 val: data/voc2007/val.txt
 test: data/voc2007/test.txt
 
-num_classes: 20
+nc: 20
 
 names: ["aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog",
         "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"]

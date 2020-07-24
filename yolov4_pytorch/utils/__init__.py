@@ -12,11 +12,17 @@
 # limitations under the License.
 # ==============================================================================
 from .common import ap_per_class
+from .common import check_anchor_order
+from .common import check_anchors
+from .common import check_file
 from .common import coco80_to_coco91_class
-from .common import compute_ap
+from .common import get_latest_run
+from .common import increment_dir
+from .common import kmean_anchors
 from .common import make_divisible
 from .common import output_to_target
 from .common import print_mutation
+from .common import torch_distributed_zero_first
 from .coords import clip_coords
 from .coords import scale_coords
 from .coords import xywh2xyxy
@@ -25,12 +31,15 @@ from .device import init_seeds
 from .device import is_parallel
 from .device import select_device
 from .device import time_synchronized
+from .download import attempt_download
+from .download import gdrive_download
 from .iou import bbox_iou
 from .iou import box_iou
 from .iou import wh_iou
 from .loss import BCEBlurWithLogitsLoss
 from .loss import FocalLoss
 from .loss import build_targets
+from .loss import compute_ap
 from .loss import compute_loss
 from .loss import fitness
 from .loss import smooth_BCE
@@ -41,17 +50,27 @@ from .plot import plot_one_box
 from .plot import plot_results
 from .prune import prune
 from .prune import sparsity
+from .weights import Ensemble
+from .weights import attempt_load
+from .weights import create_pretrained
 from .weights import initialize_weights
 from .weights import labels_to_class_weights
 from .weights import labels_to_image_weights
 
 __all__ = [
     "ap_per_class",
+    "check_anchor_order",
+    "check_anchors",
+    "check_file",
     "coco80_to_coco91_class",
+    "get_latest_run",
+    "increment_dir",
+    "kmean_anchors",
     "compute_ap",
     "make_divisible",
     "output_to_target",
     "print_mutation",
+    "torch_distributed_zero_first",
     "clip_coords",
     "scale_coords",
     "xywh2xyxy",
@@ -60,12 +79,15 @@ __all__ = [
     "is_parallel",
     "select_device",
     "time_synchronized",
+    "attempt_download",
+    "gdrive_download",
     "bbox_iou",
     "box_iou",
     "wh_iou",
     "BCEBlurWithLogitsLoss",
     "FocalLoss",
     "build_targets",
+    "compute_ap",
     "compute_loss",
     "fitness",
     "smooth_BCE",
@@ -76,6 +98,9 @@ __all__ = [
     "plot_results",
     "prune",
     "sparsity",
+    "Ensemble",
+    "attempt_load",
+    "create_pretrained",
     "initialize_weights",
     "labels_to_class_weights",
     "labels_to_image_weights",

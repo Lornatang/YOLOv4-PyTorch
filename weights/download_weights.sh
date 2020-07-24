@@ -14,13 +14,10 @@
 # limitations under the License.
 # ==============================================================================
 
-# Code source:https://github.com/eriklindernoren/PyTorch-YOLOv3/blob/master/weights/download_weights.sh
-
-# Download weights for vanilla YOLOv3
-wget -c https://pjreddie.com/media/files/yolov3.weights
-# Download weights for spp YOLOv3
-wget -c https://pjreddie.com/media/files/yolov3-spp.weights
-# # Download weights for tiny YOLOv3
-wget -c https://pjreddie.com/media/files/yolov3-tiny.weights
-# Download weights for backbone network
-wget -c https://pjreddie.com/media/files/darknet53.conv.74
+python -c "
+from utils.google_utils import *;
+attempt_download('weights/yolov5s.pt');
+attempt_download('weights/yolov5m.pt');
+attempt_download('weights/yolov5l.pt');
+attempt_download('weights/yolov5x.pt')
+"

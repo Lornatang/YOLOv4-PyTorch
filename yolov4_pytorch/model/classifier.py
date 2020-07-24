@@ -14,6 +14,7 @@
 import cv2
 import numpy as np
 import torch
+import torch.nn as nn
 import torchvision.models as models
 
 from ..utils.coords import scale_coords
@@ -21,9 +22,9 @@ from ..utils.coords import xywh2xyxy
 from ..utils.coords import xyxy2xywh
 
 
-def apply_classifier(x, model, image, raw_image):
+def apply_classifier(x, model, img, im0):
     # applies a second stage classifier to yolo outputs
-    raw_image = [raw_image] if isinstance(raw_image, np.ndarray) else raw_image
+    im0 = [im0] if isinstance(im0, np.ndarray) else im0
     for i, d in enumerate(x):  # per image
         if d is not None and len(d):
             d = d.clone()
@@ -35,42 +36,43 @@ def apply_classifier(x, model, image, raw_image):
             d[:, :4] = xywh2xyxy(b).long()
 
             # Rescale boxes from img_size to im0 size
-            scale_coords(image.shape[2:], d[:, :4], raw_image[i].shape)
+            scale_coords(img.shape[2:], d[:, :4], im0[i].shape)
 
             # Classes
             pred_cls1 = d[:, 5].long()
-            images = []
+            ims = []
             for j, a in enumerate(d):  # per item
-                cutout = raw_image[i][int(a[1]):int(a[3]), int(a[0]):int(a[2])]
-                image = cv2.resize(cutout, (224, 224))  # BGR
+                cutout = im0[i][int(a[1]):int(a[3]), int(a[0]):int(a[2])]
+                im = cv2.resize(cutout, (224, 224))  # BGR
+                # cv2.imwrite('test%i.jpg' % j, cutout)
 
-                image = image[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
-                image = np.ascontiguousarray(image, dtype=np.float32)  # uint8 to float32
-                image /= 255.0  # 0 - 255 to 0.0 - 1.0
-                images.append(image)
+                im = im[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
+                im = np.ascontiguousarray(im, dtype=np.float32)  # uint8 to float32
+                im /= 255.0  # 0 - 255 to 0.0 - 1.0
+                ims.append(im)
 
-            pred_cls2 = model(torch.Tensor(images).to(d.device)).argmax(1)  # classifier prediction
+            pred_cls2 = model(torch.Tensor(ims).to(d.device)).argmax(1)  # classifier prediction
             x[i] = x[i][pred_cls1 == pred_cls2]  # retain matching class detections
 
     return x
 
 
-def load_classifier(name="resnet101", classes=2):
+def load_classifier(name='resnet101', n=2):
     # Loads a pretrained model reshaped to n-class output
     model = models.__dict__[name](pretrained=True)
 
     # Display model properties
     input_size = [3, 224, 224]
-    input_space = "RGB"
+    input_space = 'RGB'
     input_range = [0, 1]
     mean = [0.485, 0.456, 0.406]
     std = [0.229, 0.224, 0.225]
     for x in [input_size, input_space, input_range, mean, std]:
-        print(x + " =", eval(x))
+        print(x + ' =', eval(x))
 
     # Reshape output to n classes
     filters = model.fc.weight.shape[1]
-    model.fc.bias = torch.nn.Parameter(torch.zeros(classes), requires_grad=True)
-    model.fc.weight = torch.nn.Parameter(torch.zeros(classes, filters), requires_grad=True)
-    model.fc.out_features = classes
+    model.fc.bias = nn.Parameter(torch.zeros(n), requires_grad=True)
+    model.fc.weight = nn.Parameter(torch.zeros(n, filters), requires_grad=True)
+    model.fc.out_features = n
     return model

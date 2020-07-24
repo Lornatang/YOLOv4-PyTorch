@@ -15,8 +15,6 @@ import torch
 import torch.nn as nn
 
 from .conv import Conv
-from .conv import DWConv
-from .conv import GhostConv
 
 
 class Bottleneck(nn.Module):
@@ -49,31 +47,3 @@ class BottleneckCSP(nn.Module):
         y1 = self.cv3(self.m(self.cv1(x)))
         y2 = self.cv2(x)
         return self.cv4(self.act(self.bn(torch.cat((y1, y2), dim=1))))
-
-
-class GhostBottleneck(nn.Module):
-    # Ghost Bottleneck https://github.com/huawei-noah/ghostnet
-    def __init__(self, c1, c2, k, s):
-        super(GhostBottleneck, self).__init__()
-        c_ = c2 // 2
-        self.conv = nn.Sequential(GhostConv(c1, c_, 1, 1),  # pw
-                                  DWConv(c_, c_, k, s, act=False) if s == 2 else nn.Identity(),  # dw
-                                  GhostConv(c_, c2, 1, 1, act=False))  # pw-linear
-        self.shortcut = nn.Sequential(DWConv(c1, c1, k, s, act=False),
-                                      Conv(c1, c2, 1, 1, act=False)) if s == 2 else nn.Identity()
-
-    def forward(self, x):
-        return self.conv(x) + self.shortcut(x)
-
-
-class ResNetBottleneck(nn.Module):
-    # Standard bottleneck
-    def __init__(self, c1, c2, s=1, e=0.25):  # ch_in, ch_out, shortcut, expansion
-        super(ResNetBottleneck, self).__init__()
-        c_ = int(c2 * e)  # hidden channels
-        self.cv1 = Conv(c1, c_, 1, 1)
-        self.cv2 = Conv(c_, c_, 3, s)
-        self.cv3 = Conv(c_, c2, 1, 1)
-
-    def forward(self, x):
-        return x + self.cv3(self.cv2(self.cv1(x)))

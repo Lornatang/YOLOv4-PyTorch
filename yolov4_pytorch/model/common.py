@@ -20,29 +20,29 @@ ONNX_EXPORT = False
 
 def model_info(model, verbose=False):
     # Plots a line-by-line description of a PyTorch model
-    parameter_num = sum(x.numel() for x in model.parameters())  # number parameters
-    gradient_num = sum(x.numel() for x in model.parameters() if x.requires_grad)  # number gradients
+    n_p = sum(x.numel() for x in model.parameters())  # number parameters
+    n_g = sum(x.numel() for x in model.parameters() if x.requires_grad)  # number gradients
     if verbose:
-        print("%5s %40s %9s %12s %20s %10s %10s" % ("layer", "name", "gradient", "parameters", "shape", "mu", "sigma"))
+        print('%5s %40s %9s %12s %20s %10s %10s' % ('layer', 'name', 'gradient', 'parameters', 'shape', 'mu', 'sigma'))
         for i, (name, p) in enumerate(model.named_parameters()):
-            name = name.replace("module_list.", "")
-            print("%5g %40s %9s %12g %20s %10.3g %10.3g" %
+            name = name.replace('module_list.', '')
+            print('%5g %40s %9s %12g %20s %10.3g %10.3g' %
                   (i, name, p.requires_grad, p.numel(), list(p.shape), p.mean(), p.std()))
 
     try:  # FLOPS
         from thop import profile
         flops = profile(deepcopy(model), inputs=(torch.zeros(1, 3, 64, 64),), verbose=False)[0] / 1E9 * 2
-        FLOPs = f"{flops * 100:.1f} GFLOPS",  # 640x640 FLOPS
+        fs = ', %.1f GFLOPS' % (flops * 100)  # 640x640 FLOPS
     except:
-        FLOPs = ""
+        fs = ''
 
-    print(f"Model Summary: {len(list(model.parameters()))} layers, "
-          f"{parameter_num} parameters, {gradient_num} gradients{FLOPs}")
+    print('Model Summary: %g layers, %g parameters, %g gradients%s' % (len(list(model.parameters())), n_p, n_g, fs))
 
 
-def strip_optimizer(f="weights/best.pth"):  # from utils.utils import *; strip_optimizer()
+def strip_optimizer(f='weights/best.pt'):  # from utils.utils import *; strip_optimizer()
     # Strip optimizer from *.pt files for lighter files (reduced by 1/2 size)
-    x = torch.load(f, map_location=torch.device("cpu"))
-    x["optimizer"] = None
+    x = torch.load(f, map_location=torch.device('cpu'))
+    x['optimizer'] = None
+    x['model'].half()  # to FP16
     torch.save(x, f)
-    print(f"Optimizer stripped from {f}")
+    print('Optimizer stripped from %s, %.1fMB' % (f, os.path.getsize(f) / 1E6))

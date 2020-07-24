@@ -20,8 +20,8 @@ import torch.nn as nn
 
 from .common import Concat
 from .common import Focus
+from .common import check_anchor_order
 from .conv import C3
-from .pooling import Maxpool
 from .conv import Conv
 from .conv import CrossConv
 from .conv import DWConv
@@ -31,25 +31,25 @@ from .neck import Bottleneck
 from .neck import BottleneckCSP
 from ..common import model_info
 from ..fuse import fuse_conv_and_bn
-from ...data.image import scale_image
+from ...data.image import scale_img
 from ...utils.common import make_divisible
 from ...utils.device import time_synchronized
 from ...utils.weights import initialize_weights
 
 
 class Detect(nn.Module):
-    def __init__(self, num_classes=80, anchors=(), channels=()):  # detection layer
+    def __init__(self, nc=80, anchors=(), ch=()):  # detection layer
         super(Detect, self).__init__()
         self.stride = None  # strides computed during build
-        self.num_classes = num_classes  # number of classes
-        self.no = num_classes + 5  # number of outputs per anchor
+        self.nc = nc  # number of classes
+        self.no = nc + 5  # number of outputs per anchor
         self.nl = len(anchors)  # number of detection layers
-        self.num_anchors = len(anchors[0]) // 2  # number of anchors
+        self.na = len(anchors[0]) // 2  # number of anchors
         self.grid = [torch.zeros(1)] * self.nl  # init grid
         a = torch.tensor(anchors).float().view(self.nl, -1, 2)
-        self.register_buffer("anchors", a)  # shape(nl,na,2)
-        self.register_buffer("anchor_grid", a.clone().view(self.nl, 1, -1, 1, 1, 2))  # shape(nl,1,na,1,1,2)
-        self.m = nn.ModuleList(nn.Conv2d(x, self.no * self.num_anchors, 1) for x in channels)  # output conv
+        self.register_buffer('anchors', a)  # shape(nl,na,2)
+        self.register_buffer('anchor_grid', a.clone().view(self.nl, 1, -1, 1, 1, 2))  # shape(nl,1,na,1,1,2)
+        self.m = nn.ModuleList(nn.Conv2d(x, self.no * self.na, 1) for x in ch)  # output conv
         self.export = False  # onnx export
 
     def forward(self, x):
@@ -59,7 +59,7 @@ class Detect(nn.Module):
         for i in range(self.nl):
             x[i] = self.m[i](x[i])  # conv
             bs, _, ny, nx = x[i].shape  # x(bs,255,20,20) to x(bs,3,20,20,85)
-            x[i] = x[i].view(bs, self.num_anchors, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
+            x[i] = x[i].view(bs, self.na, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
 
             if not self.training:  # inference
                 if self.grid[i].shape[2:4] != x[i].shape[2:4]:
@@ -79,8 +79,7 @@ class Detect(nn.Module):
 
 
 class YOLO(nn.Module):
-    def __init__(self, config_file="yolov5-small.yaml", channels=3,
-                 num_classes=None):  # model, input channels, number of classes
+    def __init__(self, config_file='yolov5-small.yaml', ch=3, nc=None):  # model, input channels, number of classes
         super(YOLO, self).__init__()
         if isinstance(config_file, dict):
             self.yaml = config_file  # model dict
@@ -91,18 +90,19 @@ class YOLO(nn.Module):
                 self.yaml = yaml.load(f, Loader=yaml.FullLoader)  # model dict
 
         # Define model
-        if num_classes and num_classes != self.yaml['num_classes']:
-            print(f"Overriding {config_file} num_classes={self.yaml['num_classes']} with num_classes={num_classes}")
-            self.yaml['num_classes'] = num_classes  # override yaml value
-        self.model, self.save = parse_model(deepcopy(self.yaml), channels=[channels])  # model, savelist, ch_out
+        if nc and nc != self.yaml['nc']:
+            print('Overriding %s nc=%g with nc=%g' % (config_file, self.yaml['nc'], nc))
+            self.yaml['nc'] = nc  # override yaml value
+        self.model, self.save = parse_model(deepcopy(self.yaml), ch=[ch])  # model, savelist, ch_out
         # print([x.shape for x in self.forward(torch.zeros(1, ch, 64, 64))])
 
         # Build strides, anchors
         m = self.model[-1]  # Detect()
         if isinstance(m, Detect):
             s = 128  # 2x min stride
-            m.stride = torch.tensor([s / x.shape[-2] for x in self.forward(torch.zeros(1, channels, s, s))])  # forward
+            m.stride = torch.tensor([s / x.shape[-2] for x in self.forward(torch.zeros(1, ch, s, s))])  # forward
             m.anchors /= m.stride.view(-1, 1, 1)
+            check_anchor_order(m)
             self.stride = m.stride
             self._initialize_biases()  # only run once
             # print('Strides: %s' % m.stride.tolist())
@@ -118,8 +118,8 @@ class YOLO(nn.Module):
             s = [0.83, 0.67]  # scales
             y = []
             for i, xi in enumerate((x,
-                                    scale_image(x.flip(3), s[0]),  # flip-lr and scale
-                                    scale_image(x, s[1]),  # scale
+                                    scale_img(x.flip(3), s[0]),  # flip-lr and scale
+                                    scale_img(x, s[1]),  # scale
                                     )):
                 # cv2.imwrite('img%g.jpg' % i, 255 * xi[0].numpy().transpose((1, 2, 0))[:, :, ::-1])
                 y.append(self.forward_once(xi)[0])
@@ -190,28 +190,24 @@ class YOLO(nn.Module):
         model_info(self)
 
 
-def parse_model(model_dict, channels):
-    print('\n%3s%15s%3s%10s  %-40s%-30s' % ('', 'from', 'n', 'params', 'module', 'arguments'))
-    anchors = model_dict["anchors"]
-    num_classes = model_dict["num_classes"]
-    depth_multiple = model_dict["depth_multiple"]
-    width_multiple = model_dict["width_multiple"]
-    num_anchors = (len(anchors[0]) // 2)  # number of anchors
-    num_outputs = num_anchors * (num_classes + 5)  # number of outputs = anchors * (classes + 5)
+def parse_model(d, ch):  # model_dict, input_channels(3)
+    print('\n%3s%18s%3s%10s  %-40s%-30s' % ('', 'from', 'n', 'params', 'module', 'arguments'))
+    anchors, nc, gd, gw = d['anchors'], d['nc'], d['depth_multiple'], d['width_multiple']
+    na = (len(anchors[0]) // 2) if isinstance(anchors, list) else anchors  # number of anchors
+    no = na * (nc + 5)  # number of outputs = anchors * (classes + 5)
 
-    layers, save, out_channels = [], [], channels[-1]  # layers, savelist, out channels
-    for i, (f, number, module, args) in enumerate(model_dict['backbone'] + model_dict['head']):
-        module = eval(module) if isinstance(module, str) else module  # eval strings
+    layers, save, c2 = [], [], ch[-1]  # layers, savelist, ch out
+    for i, (f, n, m, args) in enumerate(d['backbone'] + d['head']):  # from, number, module, args
+        m = eval(m) if isinstance(m, str) else m  # eval strings
         for j, a in enumerate(args):
             try:
                 args[j] = eval(a) if isinstance(a, str) else a  # eval strings
             except:
                 pass
 
-        number = max(round(number * depth_multiple), 1) if number > 1 else number  # depth gain
-        if module in [nn.Conv2d, Conv, Bottleneck, SPP, DWConv, MixConv2d, Focus, BottleneckCSP,
-                      ResNetBottleneck, MobileNetConv, ConvBNReLU, CrossConv]:
-            in_channels, out_channels = channels[f], args[0]
+        n = max(round(n * gd), 1) if n > 1 else n  # depth gain
+        if m in [nn.Conv2d, Conv, Bottleneck, SPP, DWConv, MixConv2d, Focus, CrossConv, BottleneckCSP, C3]:
+            c1, c2 = ch[f], args[0]
 
             # Normal
             # if i > 0 and args[0] != no:  # channel expansion factor
@@ -219,8 +215,8 @@ def parse_model(model_dict, channels):
             #     e = math.log(c2 / ch[1]) / math.log(2)
             #     c2 = int(ch[1] * ex ** e)
             # if m != Focus:
-            out_channels = make_divisible(out_channels * width_multiple,
-                                          8) if out_channels != num_outputs else out_channels
+
+            c2 = make_divisible(c2 * gw, 8) if c2 != no else c2
 
             # Experimental
             # if i > 0 and args[0] != no:  # channel expansion factor
@@ -231,28 +227,27 @@ def parse_model(model_dict, channels):
             # if m != Focus:
             #     c2 = make_divisible(c2, 8) if c2 != no else c2
 
-            args = [in_channels, out_channels, *args[1:]]
-            if module is BottleneckCSP:
-                args.insert(2, number)
-                number = 1
-        elif module is nn.BatchNorm2d:
-            args = [channels[f]]
-        elif module is Concat:
-            out_channels = sum([channels[-1 if x == -1 else x + 1] for x in f])
-        elif module is Detect:
-            f = f or list(reversed([(-1 if j == i else j - 1) for j, x in enumerate(channels) if x == num_outputs]))
-        elif module is Maxpool:
-            kernel_size, strides = args[0], args[1]
-            args = [kernel_size, strides]
+            args = [c1, c2, *args[1:]]
+            if m in [BottleneckCSP, C3]:
+                args.insert(2, n)
+                n = 1
+        elif m is nn.BatchNorm2d:
+            args = [ch[f]]
+        elif m is Concat:
+            c2 = sum([ch[-1 if x == -1 else x + 1] for x in f])
+        elif m is Detect:
+            args.append([ch[x + 1] for x in f])
+            if isinstance(args[1], int):  # number of anchors
+                args[1] = [list(range(args[1] * 2))] * len(f)
         else:
-            out_channels = channels[f]
+            c2 = ch[f]
 
-        m_ = nn.Sequential(*[module(*args) for _ in range(number)]) if number > 1 else module(*args)  # module
-        t = str(module)[8:-2].replace('__main__.', '')  # module type
+        m_ = nn.Sequential(*[m(*args) for _ in range(n)]) if n > 1 else m(*args)  # module
+        t = str(m)[8:-2].replace('__main__.', '')  # module type
         np = sum([x.numel() for x in m_.parameters()])  # number params
         m_.i, m_.f, m_.type, m_.np = i, f, t, np  # attach index, 'from' index, type, number params
-        print('%3s%15s%3s%10.0f  %-40s%-30s' % (i, f, number, np, t, args))  # print
+        print('%3s%18s%3s%10.0f  %-40s%-30s' % (i, f, n, np, t, args))  # print
         save.extend(x % i for x in ([f] if isinstance(f, int) else f) if x != -1)  # append to savelist
         layers.append(m_)
-        channels.append(out_channels)
+        ch.append(c2)
     return nn.Sequential(*layers), sorted(save)

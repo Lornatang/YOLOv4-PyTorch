@@ -19,15 +19,12 @@ from .activations import MishImplementation
 from .activations import Swish
 from .activations import SwishImplementation
 from .common import Concat
-from .common import Flatten
 from .common import Focus
-from .common import Sum
+from .common import check_anchor_order
 from .conv import C3
 from .conv import Conv
-from .conv import ConvBNReLU
 from .conv import CrossConv
 from .conv import DWConv
-from .conv import GhostConv
 from .conv import MixConv2d
 from .conv import MobileNetConv
 from .conv import autopad
@@ -37,9 +34,6 @@ from .layer import YOLO
 from .layer import parse_model
 from .neck import Bottleneck
 from .neck import BottleneckCSP
-from .neck import GhostBottleneck
-from .neck import ResNetBottleneck
-from .pooling import Maxpool
 
 __all__ = [
     "HardSwish",
@@ -50,15 +44,12 @@ __all__ = [
     "Swish",
     "SwishImplementation",
     "Concat",
-    "Flatten",
     "Focus",
-    "Sum",
+    "check_anchor_order",
     "C3",
     "Conv",
-    "ConvBNReLU",
     "CrossConv",
     "DWConv",
-    "GhostConv",
     "MixConv2d",
     "MobileNetConv",
     "autopad",
@@ -68,7 +59,4 @@ __all__ = [
     "parse_model",
     "Bottleneck",
     "BottleneckCSP",
-    "GhostBottleneck",
-    "ResNetBottleneck",
-    "Maxpool"
 ]

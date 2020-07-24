@@ -23,11 +23,11 @@ import numpy as np
 from ..utils.common import make_divisible
 
 
-def check_image_size(image_size, s=32):
+def check_img_size(img_size, s=32):
     # Verify img_size is a multiple of stride s
-    new_size = make_divisible(image_size, int(s))  # ceil gs-multiple
-    if new_size != image_size:
-        print(f"WARNING: --image-size {image_size} must be multiple of max stride {s}, updating to {new_size}")
+    new_size = make_divisible(img_size, int(s))  # ceil gs-multiple
+    if new_size != img_size:
+        print('WARNING: --img-size %g must be multiple of max stride %g, updating to %g' % (img_size, s, new_size))
     return new_size
 
 
@@ -60,6 +60,7 @@ def cutout(image, labels):
         box2_area = (b2_x2 - b2_x1) * (b2_y2 - b2_y1) + 1e-16
 
         # Intersection over box2 area
+
         return inter_area / box2_area
 
     # create random masks
@@ -86,13 +87,13 @@ def cutout(image, labels):
     return labels
 
 
-def random_affine(image, targets=(), degrees=10, translate=.1, scale=.1, shear=10, border=(0, 0)):
+def random_affine(img, targets=(), degrees=10, translate=.1, scale=.1, shear=10, border=(0, 0)):
     # torchvision.transforms.RandomAffine(degrees=(-10, 10), translate=(.1, .1), scale=(.9, 1.1), shear=(-10, 10))
     # https://medium.com/uruvideo/dataset-augmentation-with-random-homographies-a8f4b44830d4
     # targets = [cls, xyxy]
 
-    height = image.shape[0] + border[0] * 2  # shape(h,w,c)
-    width = image.shape[1] + border[1] * 2
+    height = img.shape[0] + border[0] * 2  # shape(h,w,c)
+    width = img.shape[1] + border[1] * 2
 
     # Rotation and Scale
     R = np.eye(3)
@@ -100,12 +101,12 @@ def random_affine(image, targets=(), degrees=10, translate=.1, scale=.1, shear=1
     # a += random.choice([-180, -90, 0, 90])  # add 90deg rotations to small rotations
     s = random.uniform(1 - scale, 1 + scale)
     # s = 2 ** random.uniform(-scale, scale)
-    R[:2] = cv2.getRotationMatrix2D(angle=a, center=(image.shape[1] / 2, image.shape[0] / 2), scale=s)
+    R[:2] = cv2.getRotationMatrix2D(angle=a, center=(img.shape[1] / 2, img.shape[0] / 2), scale=s)
 
     # Translation
     T = np.eye(3)
-    T[0, 2] = random.uniform(-translate, translate) * image.shape[1] + border[1]  # x translation (pixels)
-    T[1, 2] = random.uniform(-translate, translate) * image.shape[0] + border[0]  # y translation (pixels)
+    T[0, 2] = random.uniform(-translate, translate) * img.shape[1] + border[1]  # x translation (pixels)
+    T[1, 2] = random.uniform(-translate, translate) * img.shape[0] + border[0]  # y translation (pixels)
 
     # Shear
     S = np.eye(3)
@@ -115,7 +116,7 @@ def random_affine(image, targets=(), degrees=10, translate=.1, scale=.1, shear=1
     # Combined rotation matrix
     M = S @ T @ R  # ORDER IS IMPORTANT HERE!!
     if (border[0] != 0) or (border[1] != 0) or (M != np.eye(3)).any():  # image changed
-        image = cv2.warpAffine(image, M[:2], dsize=(width, height), flags=cv2.INTER_LINEAR, borderValue=(114, 114, 114))
+        img = cv2.warpAffine(img, M[:2], dsize=(width, height), flags=cv2.INTER_LINEAR, borderValue=(114, 114, 114))
 
     # Transform label coordinates
     n = len(targets)
@@ -152,4 +153,4 @@ def random_affine(image, targets=(), degrees=10, translate=.1, scale=.1, shear=1
         targets = targets[i]
         targets[:, 1:5] = xy[i]
 
-    return image, targets
+    return img, targets

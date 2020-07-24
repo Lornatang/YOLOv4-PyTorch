@@ -23,10 +23,7 @@ from .module import Concat
 from .module import Conv
 from .module import DWConv
 from .module import Detect
-from .module import Flatten
 from .module import Focus
-from .module import GhostBottleneck
-from .module import GhostConv
 from .module import HardSwish
 from .module import MemoryEfficientMish
 from .module import MemoryEfficientSwish
@@ -34,7 +31,6 @@ from .module import Mish
 from .module import MishImplementation
 from .module import MixConv2d
 from .module import SPP
-from .module import Sum
 from .module import Swish
 from .module import SwishImplementation
 from .module import YOLO
@@ -55,12 +51,9 @@ __all__ = [
     "Swish",
     "SwishImplementation",
     "Concat",
-    "Flatten",
     "Focus",
-    "Sum",
     "Conv",
     "DWConv",
-    "GhostConv",
     "MixConv2d",
     "SPP",
     "Detect",
@@ -68,5 +61,4 @@ __all__ = [
     "parse_model",
     "Bottleneck",
     "BottleneckCSP",
-    "GhostBottleneck"
 ]

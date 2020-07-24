@@ -12,33 +12,35 @@
 # limitations under the License.
 # ==============================================================================
 from .adjust import exif_size
-from .common import check_image_size
+from .common import check_img_size
 from .common import create_folder
 from .common import cutout
 from .common import random_affine
 from .image import LoadImages
 from .image import LoadImagesAndLabels
 from .image import augment_hsv
+from .image import create_dataloader
 from .image import load_image
 from .image import load_mosaic
-from .image import scale_image
+from .image import scale_img
 from .pad_resize import letterbox
 from .video import LoadStreams
-from .video import LoadWebCam
+from .video import LoadWebcam
 
 __all__ = [
     "exif_size",
-    "check_image_size",
+    "check_img_size",
     "create_folder",
     "cutout",
     "random_affine",
     "LoadImages",
     "LoadImagesAndLabels",
     "augment_hsv",
+    "create_dataloader",
     "load_image",
     "load_mosaic",
-    "scale_image",
+    "scale_img",
     "letterbox",
     "LoadStreams",
-    "LoadWebCam",
+    "LoadWebcam",
 ]
