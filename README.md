@@ -16,17 +16,17 @@ The goal of this implementation is to be simple, highly extensible, and easy to 
 2. [Installation](#installation)
     * [Clone and install requirements](#clone-and-install-requirements)
     * [Download pre-trained weights](#download-pre-trained-weights)
+    * [Download PascalVoc2007](#download-pascalvoc2007)
     * [Download COCO2014](#download-coco2014)
+    * [Download COCO2017](#download-coco2017)
 3. [Usage](#usage)
     * [Train](#train)
     * [Test](#test)
         * [Common settings for voc models](#common-settings-for-voc-models)
         * [Common settings for coco models](#common-settings-for-coco-models)
     * [Inference](#inference)
-4. [Backbone](#backbone)
-5. [Train on Custom Dataset](#train-on-custom-dataset)
-6. [Darknet Conversion](#darknet-conversion)
-7. [Credit](#credit) 
+4. [Train on Custom Dataset](#train-on-custom-dataset)
+5. [Credit](#credit) 
 
 ### About YOLOv4
 There are a huge number of features which are said to improve Convolutional Neural Network (CNN) accuracy. Practical testing of combinations of such features on large datasets, and theoretical justification of the result, is required. Some features operate on certain models exclusively and for certain problems exclusively, or only for small-scale datasets; while some features, such as batch-normalization and residual-connections, are applicable to the majority of models, tasks, and datasets. We assume that such universal features include Weighted-Residual-Connections (WRC), Cross-Stage-Partial-connections (CSP), Cross mini-Batch Normalization (CmBN), Self-adversarial-training (SAT) and Mish-activation. We use new features: WRC, CSP, CmBN, SAT, Mish activation, Mosaic data augmentation, CmBN, DropBlock regularization, and CIoU loss, and combine some of them to achieve state-of-the-art results: 43.5% AP (65.7% AP50) for the MS COCO dataset at a realtime speed of ~65 FPS on Tesla V100. Source code is at [this https URL](https://github.com/AlexeyAB/darknet).
@@ -35,70 +35,82 @@ There are a huge number of features which are said to improve Convolutional Neur
 
 #### Clone and install requirements
 ```bash
-$ git clone https://github.com/Lornatang/YOLOv4-PyTorch.git
-$ cd YOLOv4-PyTorch/
-$ pip install -r requirements.txt
+git clone https://github.com/Lornatang/YOLOv4-PyTorch.git
+cd YOLOv4-PyTorch/
+pip install -r requirements.txt
 ```
 
 #### Download pre-trained weights
 ```bash
-$ cd weights/
-$ bash download_weights.sh
+cd weights/
+bash download_weights.sh
+```
+
+#### Download PascalVoc2007
+```bash
+cd data/
+bash get_voc_dataset.sh
 ```
 
 #### Download COCO2014
 ```bash
-$ cd data/
-$ bash get_coco_dataset.sh
+cd data/
+bash get_coco2014_dataset.sh
+```
+
+#### Download COCO2017
+```bash
+cd data/
+bash get_coco2017_dataset.sh
 ```
 
 ### Usage
 
 #### Train
 ```bash
-usage: train.py [-h] [--epochs EPOCHS] [--batch-size BATCH_SIZE]
-                [--config-file CONFIG_FILE] [--data DATA] [--workers N]
-                [--multi-scale] [--image-size IMAGE_SIZE [IMAGE_SIZE ...]]
-                [--rect] [--resume] [--nosave] [--notest] [--evolve]
-                [--cache-images] [--weights WEIGHTS] [--device DEVICE]
-                [--single-cls]
+usage: train.py [-h] [--cfg CFG] [--data DATA] [--hyp HYP] [--epochs EPOCHS]
+                [--batch-size BATCH_SIZE] [--img-size IMG_SIZE [IMG_SIZE ...]]
+                [--rect] [--resume [RESUME]] [--nosave] [--notest]
+                [--noautoanchor] [--evolve] [--bucket BUCKET] [--cache-images]
+                [--weights WEIGHTS] [--name NAME] [--device DEVICE]
+                [--multi-scale] [--single-cls] [--sync-bn]
+                [--local_rank LOCAL_RANK]
+
 ```
 
 - Example (COCO2017)
 
 To train on COCO2014/COCO2017 run: 
 ```bash
-$ python train.py --config-file configs/COCO-Detection/yolov5-small.yaml  --data data/coco2017.yaml --weights ""
+python train.py --cfg configs/COCO-Detection/yolov5-small.yaml --data data/coco2017.yaml --weights ""
 ```
 
 - Example (VOC2007+2012)
 
 To train on VOC07+12 run:
 ```bash
-$ python train.py --config-file configs/PascalVOC-Detection/yolov5-small.yaml  --data data/voc2007.yaml --weights ""
+python train.py --cfg configs/PascalVOC-Detection/yolov5-small.yaml --data data/voc2007.yaml --weights ""
 ```
 
 - Other training methods
 
-**Normal Training:** `python train.py --config-file configs/COCO-Detection/yolov5-small.yaml  --data data/coco2014.yaml --weights ""` to begin training after downloading COCO data with `data/get_coco_dataset.sh`. Each epoch trains on 117,263 images from the train and validate COCO sets, and tests on 5000 images from the COCO validate set.
+**Normal Training:** `python train.py --cfg configs/COCO-Detection/yolov5-small.yaml  --data data/coco2014.yaml --weights ""` to begin training after downloading COCO data with `data/get_coco2014_dataset.sh`. Each epoch trains on 117,263 images from the train and validate COCO sets, and tests on 5000 images from the COCO validate set.
 
-**Resume Training:** `python train.py --config-file configs/COCO-Detection/yolov5-small.yaml  --data data/coco2014.yaml --resume` to resume training from `weights/checkpoint.pth`.
+**Resume Training:** `python train.py --cfg configs/COCO-Detection/yolov5-small.yaml  --data data/coco2014.yaml --resume` to resume training from `weights/last.pth`.
 
 #### Test
-All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 2080 SUPER GPUs & NVLink. The software in use were PyTorch 1.5, CUDA 10.2, cuDNN 7.6.5.
+All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 2080 SUPER GPUs & NVLink. The software in use were PyTorch 1.5.1, CUDA 10.2, cuDNN 7.6.5.
 
 ##### Common Settings for VOC Models
 * All VOC models were trained on `voc2007_trainval` + `voc2012_trainval` and evaluated on `voc2007_test`.
 * The default settings are __not directly comparable__ with YOLOv4's standard settings. The default settings are __not directly comparable__ with Detectron's standard settings.
   For example, our default training data augmentation uses scale jittering in addition to horizontal flipping.
-* For YOLOv3/YOLOv4, we provide baselines based on __3 different backbone combinations__:
+* For YOLOv3/YOLOv4, we provide baselines based on __2 different backbone combinations__:
   * __Darknet-53__: Use a ResNet+VGG backbone with standard conv and FC heads for mask and box prediction,
     respectively. 
   * __CSPDarknet-53__: Use a ResNet+CSPNet backbone with standard conv and FC heads for mask and box prediction,
     respectively. It obtains the best
     speed/accuracy tradeoff, but the other two are still useful for research.
-  * __GhostDarknet-53__ : Use a ResNet+Ghost backbone with standard conv and FC heads for mask and box prediction,
-    respectively. 
     
 ##### Pascal VOC Object Detection Baselines
 
@@ -118,6 +130,18 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <!-- TABLE BODY -->
 <!-- ROW: MobileNet-v1 -->
  <tr><td align="left"><a href="configs/COCO-Detection/mobilenetv1.yaml">MobileNet-v1</a></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+</tr>
+<!-- ROW: YOLOv3-Tiny -->
+ <tr><td align="left"><a href="configs/COCO-Detection/yolov3-tiny.yaml">YOLOv3-Tiny</a></td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
@@ -255,6 +279,18 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 <td align="center">-</td>
 <td align="center">-</td>
 </tr>
+<!-- ROW: YOLOv3-Tiny -->
+ <tr><td align="left"><a href="configs/COCO-Detection/yolov3-tiny.yaml">YOLOv3-Tiny</a></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+</tr>
 <!-- ROW: YOLOv3 -->
  <tr><td align="left"><a href="configs/COCO-Detection/yolov3.yaml">YOLOv3</a></td>
 <td align="center">-</td>
@@ -345,16 +381,15 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 
 `detect.py` runs inference on any sources:
 ```bash
-usage: detect.py [-h] [--config-file CONFIG_FILE] [--data DATA]
-                 [--weights WEIGHTS] [--source SOURCE] [--output OUTPUT]
-                 [--image-size IMAGE_SIZE]
-                 [--confidence-threshold CONFIDENCE_THRESHOLD]
-                 [--iou-threshold IOU_THRESHOLD] [--fourcc FOURCC] [--half]
-                 [--device DEVICE] [--view-image] [--save-txt]
+usage: detect.py [-h] [--weights WEIGHTS [WEIGHTS ...]] [--source SOURCE]
+                 [--output OUTPUT] [--img-size IMG_SIZE]
+                 [--conf-thres CONF_THRES] [--iou-thres IOU_THRES]
+                 [--device DEVICE] [--view-img] [--save-txt]
                  [--classes CLASSES [CLASSES ...]] [--agnostic-nms]
-                 [--augment]
+                 [--augment] [--update]
+
 example:
-$ python detect.py --config-file configs/COCO-Detection/yolov5-small.yaml  --data data/coco2014.yaml --weights weights/yolov5-xlarge.pth  --source ...
+  python detect.py --cfg configs/COCO-Detection/yolov5-small.yaml  --data data/coco2014.yaml --weights weights/yolov5-small.pth  --source ...
 ```
 
 - Image:  `--source file.jpg`
@@ -368,9 +403,9 @@ Run the commands below to create a custom model definition, replacing `your-data
 
 ```bash
 # move to configs dir
-$ cd configs/
-# create custom model 'yolov3-custom.yaml'. (In fact, it is OK to modify two lines of parameters, see `create_model.sh`)                              
-$ bash create_model.sh your-dataset-num-classes
+cd configs/
+create custom model 'yolov3-custom.yaml'. (In fact, it is OK to modify two lines of parameters, see `create_model.sh`)                              
+bash create_model.sh your-dataset-num-classes
 ```
 
 #### Data configuration
@@ -389,7 +424,7 @@ In `data/custom/train.txt` and `data/custom/val.txt`, add paths to images that w
 To train on the custom dataset run:
 
 ```bash
-$ python train.py --config-file configs/yolov4-custom.yaml --data data/custom.yaml --epochs 100 
+$ python train.py --cfg configs/yolov4-custom.yaml --data data/custom.yaml --epochs 100 
 ```
 
 ### Credit
