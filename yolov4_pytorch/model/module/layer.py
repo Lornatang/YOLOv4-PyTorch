@@ -26,9 +26,11 @@ from .conv import Conv
 from .conv import CrossConv
 from .conv import DWConv
 from .conv import MixConv2d
+from .conv import MobileNetConv
 from .head import SPP
 from .neck import Bottleneck
 from .neck import BottleneckCSP
+from .pooling import Maxpool
 from ..common import model_info
 from ..fuse import fuse_conv_and_bn
 from ...data.image import scale_img
@@ -206,7 +208,8 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
                 pass
 
         n = max(round(n * gd), 1) if n > 1 else n  # depth gain
-        if m in [nn.Conv2d, Conv, Bottleneck, SPP, DWConv, MixConv2d, Focus, CrossConv, BottleneckCSP, C3]:
+        if m in [nn.Conv2d, Conv, Bottleneck, SPP, DWConv, MixConv2d, MobileNetConv, Focus, CrossConv, BottleneckCSP,
+                 C3]:
             c1, c2 = ch[f], args[0]
 
             # Normal
@@ -239,6 +242,9 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
             args.append([ch[x + 1] for x in f])
             if isinstance(args[1], int):  # number of anchors
                 args[1] = [list(range(args[1] * 2))] * len(f)
+        elif m is Maxpool:
+            kernel_size, strides = args[0], args[1]
+            args = [kernel_size, strides]
         else:
             c2 = ch[f]
 
