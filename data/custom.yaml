@@ -1,0 +1,7 @@
+train: data/custom/train.txt
+val: data/custom/val.txt
+test: data/custom/test.txt
+
+nc: 1
+
+names: ["train"]
