@@ -23,10 +23,10 @@ def model_info(model, verbose=False):
     parameter_num = sum(x.numel() for x in model.parameters())  # number parameters
     gradient_num = sum(x.numel() for x in model.parameters() if x.requires_grad)  # number gradients
     if verbose:
-        print('%5s %40s %9s %12s %20s %10s %10s' % ('layer', 'name', 'gradient', 'parameters', 'shape', 'mu', 'sigma'))
+        print("%5s %40s %9s %12s %20s %10s %10s" % ("layer", "name", "gradient", "parameters", "shape", "mu", "sigma"))
         for i, (name, p) in enumerate(model.named_parameters()):
-            name = name.replace('module_list.', '')
-            print('%5g %40s %9s %12g %20s %10.3g %10.3g' %
+            name = name.replace("module_list.", "")
+            print("%5g %40s %9s %12g %20s %10.3g %10.3g" %
                   (i, name, p.requires_grad, p.numel(), list(p.shape), p.mean(), p.std()))
 
     try:  # FLOPS
@@ -40,9 +40,9 @@ def model_info(model, verbose=False):
           f"{parameter_num} parameters, {gradient_num} gradients{FLOPs}")
 
 
-def strip_optimizer(f='weights/best.pth'):  # from utils.utils import *; strip_optimizer()
+def strip_optimizer(f="weights/best.pth"):  # from utils.utils import *; strip_optimizer()
     # Strip optimizer from *.pt files for lighter files (reduced by 1/2 size)
-    x = torch.load(f, map_location=torch.device('cpu'))
-    x['optimizer'] = None
+    x = torch.load(f, map_location=torch.device("cpu"))
+    x["optimizer"] = None
     torch.save(x, f)
-    print('Optimizer stripped from %s' % f)
+    print(f"Optimizer stripped from {f}")

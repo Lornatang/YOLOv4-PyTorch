@@ -26,7 +26,7 @@ def clip_coords(boxes, image_shape):
 def scale_coords(new_shape, coords, raw_shape, ratio_pad=None):
     # Rescale coords (xyxy) from img1_shape to img0_shape
     if ratio_pad is None:  # calculate from img0_shape
-        gain = max(new_shape) / max(raw_shape)  # gain  = old / new
+        gain = min(new_shape[0] / raw_shape[0], new_shape[1] / raw_shape[1])  # gain  = old / new
         pad = (new_shape[1] - raw_shape[1] * gain) / 2, (new_shape[0] - raw_shape[0] * gain) / 2  # wh padding
     else:
         gain = ratio_pad[0][0]

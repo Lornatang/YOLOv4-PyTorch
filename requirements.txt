@@ -1,12 +1,12 @@
 # --------------------- If use pip -----------------------------
 Cython
-numpy==1.17
+numpy
 opencv-python
 torch
 torchvision
 onnx
 matplotlib
-PyYAML>=5.3
+PyYAML
 scipy
 tqdm
 tensorboard

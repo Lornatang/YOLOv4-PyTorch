@@ -35,7 +35,7 @@ np.set_printoptions(linewidth=320, formatter={"float_kind": "{:11.5g}".format})
 cv2.setNumThreads(0)
 
 
-def plot_images(images, targets, paths=None, filename='images.png', names=None, max_size=640, max_subplots=16):
+def plot_images(images, targets, paths=None, filename="images.png", names=None, max_size=640, max_subplots=16):
     tl = 3  # line thickness
     tf = max(tl - 1, 1)  # font thickness
     if os.path.isfile(filename):  # do not overwrite
@@ -65,10 +65,10 @@ def plot_images(images, targets, paths=None, filename='images.png', names=None, 
     mosaic = np.full((int(ns * h), int(ns * w), 3), 255, dtype=np.uint8)
 
     # Fix class - colour map
-    prop_cycle = plt.rcParams['axes.prop_cycle']
+    prop_cycle = plt.rcParams["axes.prop_cycle"]
     # https://stackoverflow.com/questions/51350872/python-from-color-name-to-rgb
     hex2rgb = lambda h: tuple(int(h[1 + i:1 + i + 2], 16) for i in (0, 2, 4))
-    color_lut = [hex2rgb(h) for h in prop_cycle.by_key()['color']]
+    color_lut = [hex2rgb(h) for h in prop_cycle.by_key()["color"]]
 
     for i, img in enumerate(images):
         if i == max_subplots:  # if last batch has fewer images than we expect
@@ -85,7 +85,7 @@ def plot_images(images, targets, paths=None, filename='images.png', names=None, 
         if len(targets) > 0:
             image_targets = targets[targets[:, 0] == i]
             boxes = xywh2xyxy(image_targets[:, 2:6]).T
-            classes = image_targets[:, 1].astype('int')
+            classes = image_targets[:, 1].astype("int")
             gt = image_targets.shape[1] == 6  # ground truth if no conf column
             conf = None if gt else image_targets[:, 6]  # check for confidence presence (gt vs pred)
 
@@ -132,14 +132,14 @@ def plot_labels(labels):
     fig, ax = plt.subplots(2, 2, figsize=(8, 8), tight_layout=True)
     ax = ax.ravel()
     ax[0].hist(c, bins=int(c.max() + 1))
-    ax[0].set_xlabel('classes')
-    ax[1].scatter(b[0], b[1], c=hist2d(b[0], b[1], 90), cmap='jet')
-    ax[1].set_xlabel('x')
-    ax[1].set_ylabel('y')
-    ax[2].scatter(b[2], b[3], c=hist2d(b[2], b[3], 90), cmap='jet')
-    ax[2].set_xlabel('width')
-    ax[2].set_ylabel('height')
-    plt.savefig('labels.png', dpi=200)
+    ax[0].set_xlabel("classes")
+    ax[1].scatter(b[0], b[1], c=hist2d(b[0], b[1], 90), cmap="jet")
+    ax[1].set_xlabel("x")
+    ax[1].set_ylabel("y")
+    ax[2].scatter(b[2], b[3], c=hist2d(b[2], b[3], 90), cmap="jet")
+    ax[2].set_xlabel("width")
+    ax[2].set_ylabel("height")
+    plt.savefig("labels.png", dpi=200)
 
 
 def plot_one_box(x, image, color=None, label=None, line_thickness=None):
@@ -159,10 +159,10 @@ def plot_one_box(x, image, color=None, label=None, line_thickness=None):
 def plot_results(start=0, stop=0, labels=()):  # from utils.utils import *; plot_results()
     fig, ax = plt.subplots(2, 5, figsize=(12, 6))
     ax = ax.ravel()
-    s = ['GIoU', 'Objectness', 'Classification', 'Precision', 'Recall',
-         'val GIoU', 'val Objectness', 'val Classification', 'mAP@0.5', 'mAP@0.5:0.95']
+    s = ["GIoU", "Objectness", "Classification", "Precision", "Recall",
+         "val GIoU", "val Objectness", "val Classification", "mAP@0.5", "mAP@0.5:0.95"]
 
-    files = glob.glob('results*.txt')
+    files = glob.glob("results*.txt")
 
     for fi, f in enumerate(files):
         try:
@@ -175,13 +175,13 @@ def plot_results(start=0, stop=0, labels=()):  # from utils.utils import *; plot
                     y[y == 0] = np.nan  # dont show zero loss values
                     # y /= y[0]  # normalize
                 label = labels[fi] if len(labels) else Path(f).stem
-                ax[i].plot(x, y, marker='.', label=label, linewidth=2, markersize=8)
+                ax[i].plot(x, y, marker=".", label=label, linewidth=2, markersize=8)
                 ax[i].set_title(s[i])
                 # if i in [5, 6, 7]:  # share train and val loss y axes
                 #     ax[i].get_shared_y_axes().join(ax[i], ax[i - 5])
         except Warning:
-            print(f'Warning: Plotting error for {f}, skipping file')
+            print(f"Warning: Plotting error for {f}, skipping file")
 
     fig.tight_layout()
     ax[1].legend()
-    fig.savefig('results.png', dpi=200)
+    fig.savefig("results.png", dpi=200)

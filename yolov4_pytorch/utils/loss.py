@@ -21,7 +21,7 @@ class BCEBlurWithLogitsLoss(nn.Module):
     # BCEwithLogitLoss() with reduced missing label effects.
     def __init__(self, alpha=0.05):
         super(BCEBlurWithLogitsLoss, self).__init__()
-        self.loss_fcn = nn.BCEWithLogitsLoss(reduction='none')  # must be nn.BCEWithLogitsLoss()
+        self.loss_fcn = nn.BCEWithLogitsLoss(reduction="none")  # must be nn.BCEWithLogitsLoss()
         self.alpha = alpha
 
     def forward(self, pred, true):
@@ -42,7 +42,7 @@ class FocalLoss(nn.Module):
         self.gamma = gamma
         self.alpha = alpha
         self.reduction = loss_fcn.reduction
-        self.loss_fcn.reduction = 'none'  # required to apply FL to each element
+        self.loss_fcn.reduction = "none"  # required to apply FL to each element
 
     def forward(self, pred, true):
         loss = self.loss_fcn(pred, true)
@@ -56,9 +56,9 @@ class FocalLoss(nn.Module):
         modulating_factor = (1.0 - p_t) ** self.gamma
         loss *= alpha_factor * modulating_factor
 
-        if self.reduction == 'mean':
+        if self.reduction == "mean":
             return loss.mean()
-        elif self.reduction == 'sum':
+        elif self.reduction == "sum":
             return loss.sum()
         else:  # 'none'
             return loss
@@ -74,7 +74,8 @@ def build_targets(p, targets, model):
     off = torch.tensor([[1, 0], [0, 1], [-1, 0], [0, -1]], device=targets.device).float()  # overlap offsets
     at = torch.arange(na).view(na, 1).repeat(1, nt)  # anchor tensor, same as .repeat_interleave(nt)
 
-    style = 'rect4'
+    g = 0.5  # offset
+    style = "rect4"
     for i in range(det.nl):
         anchors = det.anchors[i]
         gain[2:] = torch.tensor(p[i].shape)[[3, 2, 3, 2]]  # xyxy gain
@@ -88,15 +89,13 @@ def build_targets(p, targets, model):
             a, t = at[j], t.repeat(na, 1, 1)[j]  # filter
 
             # overlaps
-            g = 0.5  # offset
             gxy = t[:, 2:4]  # grid xy
             z = torch.zeros_like(gxy)
-            if style == 'rect2':
+            if style == "rect2":
                 j, k = ((gxy % 1. < g) & (gxy > 1.)).T
                 a, t = torch.cat((a, a[j], a[k]), 0), torch.cat((t, t[j], t[k]), 0)
                 offsets = torch.cat((z, z[j] + off[0], z[k] + off[1]), 0) * g
-
-            elif style == 'rect4':
+            elif style == "rect4":
                 j, k = ((gxy % 1. < g) & (gxy > 1.)).T
                 l, m = ((gxy % 1. > (1 - g)) & (gxy < (gain[[2, 3]] - 1.))).T
                 a, t = torch.cat((a, a[j], a[k], a[l], a[m]), 0), torch.cat((t, t[j], t[k], t[l], t[m]), 0)
@@ -119,15 +118,16 @@ def build_targets(p, targets, model):
 
 
 def compute_loss(p, targets, model):  # predictions, targets, model
+    device = targets.device
     ft = torch.cuda.FloatTensor if p[0].is_cuda else torch.Tensor
-    lcls, lbox, lobj = ft([0]), ft([0]), ft([0])
+    lcls, lbox, lobj = ft([0]).to(device), ft([0]).to(device), ft([0]).to(device)
     tcls, tbox, indices, anchors = build_targets(p, targets, model)  # targets
     h = model.hyper_parameters  # hyper parameters
     red = 'mean'  # Loss reduction (sum or mean)
 
     # Define criteria
-    BCEcls = nn.BCEWithLogitsLoss(pos_weight=ft([h['classes_pw']]), reduction=red)
-    BCEobj = nn.BCEWithLogitsLoss(pos_weight=ft([h['obj_pw']]), reduction=red)
+    BCEcls = nn.BCEWithLogitsLoss(pos_weight=ft([h["classes_pw"]]), reduction=red).to(device)
+    BCEobj = nn.BCEWithLogitsLoss(pos_weight=ft([h["obj_pw"]]), reduction=red).to(device)
 
     # class label smoothing https://arxiv.org/pdf/1902.04103.pdf eqn 3
     cp, cn = smooth_BCE(eps=0.0)
@@ -138,11 +138,12 @@ def compute_loss(p, targets, model):  # predictions, targets, model
         BCEcls, BCEobj = FocalLoss(BCEcls, g), FocalLoss(BCEobj, g)
 
     # per output
-    nt = 0  # targets
-    balance = [1.0, 1.0, 1.0]
+    nt = 0  # number of targets
+    np = len(p)  # number of outputs
+    balance = [4.0, 1.0, 0.4] if np == 3 else [4.0, 1.0, 0.4, 0.1]  # P3-5 or P3-6
     for i, pi in enumerate(p):  # layer index, layer predictions
         b, a, gj, gi = indices[i]  # image, anchor, gridy, gridx
-        tobj = torch.zeros_like(pi[..., 0])  # target obj
+        tobj = torch.zeros_like(pi[..., 0]).to(device)  # target obj
 
         nb = b.shape[0]  # number of targets
         if nb:
@@ -152,16 +153,16 @@ def compute_loss(p, targets, model):  # predictions, targets, model
             # GIoU
             pxy = ps[:, :2].sigmoid() * 2. - 0.5
             pwh = (ps[:, 2:4].sigmoid() * 2) ** 2 * anchors[i]
-            pbox = torch.cat((pxy, pwh), 1)  # predicted box
+            pbox = torch.cat((pxy, pwh), 1).to(device)  # predicted box
             giou = bbox_iou(pbox.t(), tbox[i], x1y1x2y2=False, GIoU=True)  # giou(prediction, target)
-            lbox += (1.0 - giou).sum() if red == 'sum' else (1.0 - giou).mean()  # giou loss
+            lbox += (1.0 - giou).sum() if red == "sum" else (1.0 - giou).mean()  # giou loss
 
             # Obj
             tobj[b, a, gj, gi] = (1.0 - model.gr) + model.gr * giou.detach().clamp(0).type(tobj.dtype)  # giou ratio
 
             # Class
             if model.num_classes > 1:  # cls loss (only if multiple classes)
-                t = torch.full_like(ps[:, 5:], cn)  # targets
+                t = torch.full_like(ps[:, 5:], cn).to(device)  # targets
                 t[range(nb), tcls[i]] = cp
                 lcls += BCEcls(ps[:, 5:], t)  # BCE
 
@@ -172,9 +173,9 @@ def compute_loss(p, targets, model):  # predictions, targets, model
         lobj += BCEobj(pi[..., 4], tobj) * balance[i]  # obj loss
 
     s = 3 / (i + 1)  # output count scaling
-    lbox *= h['giou'] * s
-    lobj *= h['obj'] * s
-    lcls *= h['classes'] * s
+    lbox *= h["giou"] * s
+    lobj *= h["obj"] * s * (1.4 if np == 4 else 1.)
+    lcls *= h["classes"] * s
     bs = tobj.shape[0]  # batch size
     if red == 'sum':
         g = 3.0  # loss gain
@@ -193,6 +194,6 @@ def fitness(x):
     return (x[:, :4] * w).sum(1)
 
 
-def smooth_BCE(eps=0.1):
+def smooth_BCE(eps=0.1):  # https://github.com/ultralytics/yolov3/issues/238#issuecomment-598028441
     # return positive, negative label smoothing BCE targets
     return 1.0 - 0.5 * eps, 0.5 * eps

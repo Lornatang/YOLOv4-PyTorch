@@ -39,6 +39,8 @@ from .plot import plot_images
 from .plot import plot_labels
 from .plot import plot_one_box
 from .plot import plot_results
+from .prune import prune
+from .prune import sparsity
 from .weights import initialize_weights
 from .weights import labels_to_class_weights
 from .weights import labels_to_image_weights
@@ -72,6 +74,8 @@ __all__ = [
     "plot_labels",
     "plot_one_box",
     "plot_results",
+    "prune",
+    "sparsity",
     "initialize_weights",
     "labels_to_class_weights",
     "labels_to_image_weights",

@@ -137,10 +137,7 @@ def print_mutation(hyp, results):
 
 
 def output_to_target(output, width, height):
-    """
-    Convert a YOLO model output to target format
-    [batch_id, class_id, x, y, w, h, conf]
-    """
+    # Convert model output to target format [batch_id, class_id, x, y, w, h, conf]
     if isinstance(output, torch.Tensor):
         output = output.cpu().numpy()
 

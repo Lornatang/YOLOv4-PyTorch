@@ -17,6 +17,7 @@ import math
 import os
 import random
 import time
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -51,68 +52,71 @@ except:
     mixed_precision = False  # not installed
 
 # Hyper parameters
-hyper_parameters = {"lr0": 0.01,  # initial learning rate (SGD=1E-2, Adam=1E-3)
-                    "momentum": 0.937,  # SGD momentum
+hyper_parameters = {"optimizer": "SGD",  # ["adam", "SGD", None] if none, default is SGD
+                    "lr0": 0.01,  # initial learning rate (SGD=1E-2, Adam=1E-3)
+                    "momentum": 0.937,  # SGD momentum/Adam beta1
                     "weight_decay": 5e-4,  # optimizer weight decay
                     "giou": 0.05,  # giou loss gain
-                    "classes": 0.58,  # cls loss gain
+                    "classes": 0.5,  # cls loss gain
                     "classes_pw": 1.0,  # cls BCELoss positive_weight
-                    "obj": 1.0,  # obj loss gain (*=image_size/320 if image_size != 320)
+                    "obj": 1.0,  # obj loss gain (*=img_size/320 if img_size != 320)
                     "obj_pw": 1.0,  # obj BCELoss positive_weight
                     "iou_t": 0.20,  # iou training threshold
                     "anchor_t": 4.0,  # anchor-multiple threshold
                     "fl_gamma": 0.0,  # focal loss gamma (efficientDet default is gamma=1.5)
-                    "hsv_h": 0.014,  # image HSV-Hue augmentation (fraction)
-                    "hsv_s": 0.68,  # image HSV-Saturation augmentation (fraction)
-                    "hsv_v": 0.36,  # image HSV-Value augmentation (fraction)
+                    "hsv_h": 0.015,  # image HSV-Hue augmentation (fraction)
+                    "hsv_s": 0.7,  # image HSV-Saturation augmentation (fraction)
+                    "hsv_v": 0.4,  # image HSV-Value augmentation (fraction)
                     "degrees": 0.0,  # image rotation (+/- deg)
                     "translate": 0.0,  # image translation (+/- fraction)
                     "scale": 0.5,  # image scale (+/- gain)
                     "shear": 0.0}  # image shear (+/- deg)
-print(hyper_parameters)
-
-# Overwrite hyp with hyp*.txt
-parameter_file = glob.glob("hyp*.txt")
-if parameter_file:
-    print(f"Using {parameter_file[0]}")
-    for keys, value in zip(hyper_parameters.keys(), np.loadtxt(parameter_file[0])):
-        hyper_parameters[keys] = value
-
-# Print focal loss if gamma > 0
-if hyper_parameters["fl_gamma"]:
-    print(f"Using FocalLoss(gamma={hyper_parameters['fl_gamma']})")
 
 
-def train(parameters):
+def train(parameters, tb_writer, opt, device):
+    print(f"Hyper parameters {hyper_parameters}")
+    log_dir = tb_writer.log_dir if tb_writer else "runs/evolution"  # run directory
+
     epochs = args.epochs  # 300
     batch_size = args.batch_size  # 64
+    total_batch_size = args.total_batch_size
     weights = args.weights  # initial training weights
+    rank = args.local_rank
+
+    # Save run settings
+    with open(Path(log_dir) / "hyp.yaml", "w") as f:
+        yaml.dump(hyper_parameters, f, sort_keys=False)
+    with open(Path(log_dir) / "arg.yaml", "w") as f:
+        yaml.dump(vars(args), f, sort_keys=False)
 
     # Configure
-    init_seeds(1)
+    init_seeds(2 + rank)
     with open(args.data) as data_file:
         data_dict = yaml.load(data_file, Loader=yaml.FullLoader)  # model dict
     train_path = data_dict["train"]
     test_path = data_dict["val"]
-    num_classes = 1 if args.single_cls else int(data_dict["num_classes"])  # number of classes
+
+    num_classes, names = (1, ["item"]) if args.single_cls else (int(data_dict["num_classes"]), data_dict["names"])
+    assert len(names) == num_classes, f"{len(names)} names found for num_classes={num_classes} dataset in {args.data}"
 
     # Remove previous results
-    for f in glob.glob("results.txt"):
-        os.remove(f)
+    if rank in [-1, 0]:
+        for f in glob.glob('*_batch_*.png') + glob.glob("results.txt"):
+            os.remove(f)
 
     # Create model
-    model = YOLO(args.config_file).to(device)
-    assert model.config_file[
-               "num_classes"] == num_classes, f"{args.data} classes={num_classes} classes but {args.config_file} classes={model.config_file['num_classes']} classes "
+    model = YOLO(args.config_file, num_classes=num_classes).to(device)
 
     # Image sizes
     gs = int(max(model.stride))  # grid size (max stride)
+    # verify image size are gs-multiples
     image_size, image_size_test = [check_image_size(size, gs) for size in args.image_size]
 
     # Optimizer
     nominal_batch_size = 64  # nominal batch size
     accumulate = max(round(nominal_batch_size / batch_size), 1)  # accumulate loss before optimizing
-    parameters["weight_decay"] *= batch_size * accumulate / nominal_batch_size  # scale weight_decay
+    parameters["weight_decay"] *= total_batch_size * accumulate / nominal_batch_size  # scale weight_decay
+
     pg0, pg1, pg2 = [], [], []  # optimizer parameter groups
     for model_key, model_value in model.named_parameters():
         if model_value.requires_grad:
@@ -123,7 +127,12 @@ def train(parameters):
             else:
                 pg0.append(model_value)  # all else
 
-    optimizer = optim.SGD(pg0, lr=parameters["lr0"], momentum=parameters["momentum"], nesterov=True)
+    # https://pytorch.org/docs/stable/_modules/torch/optim/lr_scheduler.html#OneCycleLR
+    if parameters["optimizer"] == "adam":
+        optimizer = optim.Adam(pg0, lr=parameters["lr0"], betas=(parameters["momentum"], 0.999))
+    else:
+        optimizer = optim.SGD(pg0, lr=parameters["lr0"], momentum=parameters["momentum"], nesterov=True)
+
     optimizer.add_param_group({"params": pg1, "weight_decay": parameters["weight_decay"]})  # add pg1 with weight_decay
     optimizer.add_param_group({"params": pg2})  # add pg2 (biases)
     print(f"Optimizer groups: {len(pg2)} .bias, {len(pg1)} conv.weight, {len(pg0)} other")
@@ -137,14 +146,16 @@ def train(parameters):
 
         # load model
         try:
-            checkpoint["state_dict"] = {k: v for k, v in checkpoint["state_dict"].items() if
-                                        model.state_dict()[k].shape == v.shape}
+            exclude = ["anchor"]  # exclude keys
+            checkpoint["state_dict"] = {k: v for k, v in checkpoint["state_dict"].float().state_dict().items()
+                                        if k in model.state_dict() and not any(x in k for x in exclude)
+                                        and model.state_dict()[k].shape == v.shape}
             model.load_state_dict(checkpoint["state_dict"], strict=False)
-            model.float()
+            print(f"Transferred {len(checkpoint['state_dict'])}/{len(model.state_dict())} items from {weights}")
         except KeyError as e:
-            s = f"{args.weights} is not compatible with {args.config_file}. This may be due to model differences or " \
-                f"{args.weights} may be out of date. Please delete or update {args.weights} and try again, " \
-                f"or use --weights '' to train from scratch."
+            s = f"{weights} is not compatible with {args.config}. This may be due to model differences or {weights} " \
+                f"may be out of date. Please delete or update {weights} and try again, or use " \
+                f"--weights '' to train from scratch."
             raise KeyError(s) from e
 
         # load optimizer
@@ -157,11 +168,13 @@ def train(parameters):
             with open("results.txt", "w") as file:
                 file.write(checkpoint["training_results"])  # write results.txt
 
+        # epochs
         start_epoch = checkpoint["epoch"] + 1
         if epochs < start_epoch:
             print(f"{args.weights} has been trained for {checkpoint['epoch']} epochs. "
                   f"Fine-tuning for {epochs} additional epochs.")
-            epochs += checkpoint['epoch']  # finetune additional epochs
+            epochs += checkpoint["epoch"]  # fine tune additional epochs
+
         del checkpoint
 
     # Mixed precision training https://github.com/NVIDIA/apex
@@ -169,18 +182,24 @@ def train(parameters):
         model, optimizer = amp.initialize(model, optimizer, opt_level="O1", verbosity=0)
 
     # Scheduler https://arxiv.org/pdf/1812.01187.pdf
-    lr_lambda = lambda x: (((1 + math.cos(x * math.pi / epochs)) / 2) ** 1.0) * 0.9 + 0.1  # cosine
+    lr_lambda = lambda x: (((1 + math.cos(x * math.pi / epochs)) / 2) ** 1.0) * 0.8 + 0.2  # cosine
     scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
-    scheduler.last_epoch = start_epoch - 1  # do not move
 
-    # Initialize distributed training
-    if device.type != "cpu" and torch.cuda.device_count() > 1 and torch.distributed.is_available():
-        dist.init_process_group(backend="nccl",  # distributed backend
-                                init_method="tcp://127.0.0.1:18888",  # init method
-                                world_size=1,  # number of nodes
-                                rank=0)  # node rank
-        model = torch.nn.parallel.DistributedDataParallel(model)
-        # pip install torch==1.4.0+cu100 torchvision==0.5.0+cu100 -f https://download.pytorch.org/whl/torch_stable.html
+    # DP mode
+    if device.type != "cpu" and rank == -1 and torch.cuda.device_count() > 1:
+        model = torch.nn.DataParallel(model)
+
+    # SyncBatchNorm
+    if args.sync_bn and device.type != "cpu" and rank != -1:
+        model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model).to(device)
+        print("Using SyncBatchNorm()")
+
+    # Exponential moving average
+    ema = ModelEMA(model) if rank in [-1, 0] else None
+
+    # DDP mode
+    if device.type != 'cpu' and rank != -1:
+        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[rank], output_device=rank)
 
     # Dataset
     # Apply augmentation hyper parameters (option: rectangular training)
@@ -200,7 +219,7 @@ def train(parameters):
     collate_fn = train_dataset.collate_fn
 
     max_class = np.concatenate(train_dataset.labels, 0)[:, 0].max()
-    assert max_class < num_classes, f"Label class {max_class} exceeds classes={num_classes} in {args.config_file}. Correct your labels or your model."
+    assert max_class < num_classes, f"Label class {max_class} exceeds num_classes={num_classes} in {args.data}. Possible class labels are 0-{num_classes - 1}"
 
     # Dataloader
     train_dataloader = torch.utils.data.DataLoader(train_dataset,
@@ -222,43 +241,60 @@ def train(parameters):
     model.hyper_parameters = parameters  # attach hyper parameters to model
     model.gr = 1.0  # giou loss ratio (obj_loss = 1.0 or giou)
     model.class_weights = labels_to_class_weights(train_dataset.labels, num_classes).to(device)  # attach class weights
-    model.names = data_dict["names"]
+    model.names = names
 
     # class frequency
-    labels = np.concatenate(train_dataset.labels, 0)
-    c = torch.tensor(labels[:, 0])  # classes
-    if tb_writer:
-        tb_writer.add_histogram("classes", c, 0)
+    if rank in [-1, 0]:
+        labels = np.concatenate(train_dataset.labels, 0)
+        c = torch.tensor(labels[:, 0])  # classes
 
-    # Exponential moving average
-    ema = ModelEMA(model)
+        if tb_writer:
+            tb_writer.add_histogram("classes", c, 0)
 
     # Start training
     t0 = time.time()
-    nb = len(train_dataloader)  # number of batches
-    n_burn = max(3 * nb, 1000)  # burn-in iterations, max(3 epochs, 1k iterations)
+    number_batches = len(train_dataloader)
+    n_burn = max(3 * number_batches, 1000)  # burn-in iterations, max(3 epochs, 1k iterations)
     maps = np.zeros(num_classes)  # mAP per class
     # "P", "R", "mAP", "F1", "val GIoU", "val Objectness", "val Classification"
     results = (0, 0, 0, 0, 0, 0, 0)
-    print(f"Image sizes {image_size} train, {image_size_test} test")
-    print(f"Using {args.workers} dataloader workers")
-    print(f"Starting training for {epochs} epochs...")
-    epoch = 0
+    scheduler.last_epoch = start_epoch - 1
+
+    if rank in [0, -1]:
+        print(f"Image sizes {image_size} train, {image_size_test} test")
+        print(f"Using {args.workers} dataloader workers")
+        print(f"Starting training for {epochs} epochs...")
+
     for epoch in range(start_epoch, epochs):
         model.train()
 
         # Update image weights (optional)
         if train_dataset.image_weights:
-            w = model.class_weights.cpu().numpy() * (1 - maps) ** 2  # class weights
-            image_weights = labels_to_image_weights(train_dataset.labels, num_classes=num_classes, class_weights=w)
-            train_dataset.indices = random.choices(range(train_dataset.image_files_num), weights=image_weights,
-                                                   k=train_dataset.image_files_num)  # rand weighted idx
+            # Generate indices.
+            if rank in [-1, 0]:
+                w = model.class_weights.cpu().numpy() * (1 - maps) ** 2  # class weights
+                image_weights = labels_to_image_weights(train_dataset.labels, num_classes=num_classes, class_weights=w)
+                train_dataset.indices = random.choices(range(train_dataset.image_files_num), weights=image_weights,
+                                                       k=train_dataset.image_files_num)  # rand weighted idx
+
+            # Broadcast.
+            if rank != -1:
+                indices = torch.zeros([train_dataset.image_files_num], dtype=torch.int)
+                if rank == 0:
+                    indices[:] = torch.from_tensor(train_dataset.indices, dtype=torch.int)
+                dist.broadcast(indices, 0)
+                if rank != 0:
+                    train_dataset.indices = indices.cpu().numpy()
 
         mean_losses = torch.zeros(4, device=device)  # mean losses
-        print(("\n" + "%10s" * 8) % ("Epoch", "memory", "GIoU", "obj", "cls", "total", "targets", " image_size"))
-        progress_bar = tqdm(enumerate(train_dataloader), total=nb)  # progress bar
+
+        progress_bar = enumerate(train_dataloader)
+        if rank in [-1, 0]:
+            print(("\n" + "%10s" * 8) % ("Epoch", "memory", "GIoU", "obj", "cls", "total", "targets", " image_size"))
+            progress_bar = tqdm(enumerate(train_dataloader), total=number_batches)  # progress bar
+
         for index, (images, targets, paths, _) in progress_bar:
-            ni = index + nb * epoch  # number integrated batches (since train start)
+            ni = index + number_batches * epoch  # number integrated batches (since train start)
             images = images.to(device).float() / 255.0  # uint8 to float32, 0 - 255 to 0.0 - 1.0
 
             # Burn-in
@@ -285,9 +321,13 @@ def train(parameters):
 
             # Loss
             loss, loss_items = compute_loss(output, targets.to(device), model)
+
+            if rank != -1:
+                loss *= args.world_size  # gradient averaged between devices in DDP mode
+
             if not torch.isfinite(loss):
                 print("WARNING: non-finite loss, ending training ", loss_items)
-                return 0, 0, 0, 0, 0, 0, 0
+                return results
 
             # Backward
             if mixed_precision:
@@ -300,73 +340,82 @@ def train(parameters):
             if ni % accumulate == 0:
                 optimizer.step()
                 optimizer.zero_grad()
-                ema.update(model)
+                if ema is not None:
+                    ema.update(model)
 
             # Print
-            mean_losses = (mean_losses * index + loss_items) / (index + 1)  # update mean losses
-            memory = "%.3gG" % (torch.cuda.memory_cached() / 1E9 if torch.cuda.is_available() else 0)  # (GB)
-            s = ("%10s" * 2 + "%10.4g" * 6) % (
-                "%g/%g" % (epoch, epochs - 1), memory, *mean_losses, targets.shape[0], images.shape[-1])
-            progress_bar.set_description(s)
+            if rank in [-1, 0]:
+                mean_losses = (mean_losses * index + loss_items) / (index + 1)  # update mean losses
+                memory = "%.3gG" % (torch.cuda.memory_cached() / 1E9 if torch.cuda.is_available() else 0)  # (GB)
+                s = ("%10s" * 2 + "%10.4g" * 6) % (
+                    "%g/%g" % (epoch, epochs - 1), memory, *mean_losses, targets.shape[0], images.shape[-1])
+                progress_bar.set_description(s)
 
         # Scheduler
         scheduler.step()
 
-        # mAP
-        ema.update_attr(model)
-        final_epoch = epoch + 1 == epochs
-        if not args.notest or final_epoch:  # Calculate mAP
-            results, maps, times = evaluate(args.config_file,
-                                            args.data,
-                                            batch_size=batch_size,
-                                            image_size=image_size_test,
-                                            save_json=final_epoch,
-                                            model=ema.ema,
-                                            single_cls=args.single_cls,
-                                            dataloader=test_dataloader)
+        # Only the first process in DDP mode is allowed to log or save checkpoints.
+        if rank in [-1, 0]:
+            # mAP
+            if ema is not None:
+                ema.update_attr(model, include=['yaml', 'nc', 'hyp', 'gr', 'names', 'stride'])
+            final_epoch = epoch + 1 == epochs
+            if not args.notest or final_epoch:  # Calculate mAP
+                results, maps, times = evaluate(args.config_file,
+                                                args.data,
+                                                batch_size=batch_size,
+                                                image_size=image_size_test,
+                                                save_json=final_epoch and args.data.endswith(os.sep + "coco.yaml"),
+                                                model=ema.ema.module if hasattr(ema.ema, 'module') else ema.ema,
+                                                single_cls=args.single_cls,
+                                                dataloader=test_dataloader)
 
-        # Write
-        with open("results.txt", "a") as f:
-            f.write(s + "%10.4g" * 7 % results + "\n")  # P, R, mAP, F1, test_losses=(GIoU, obj, cls)
+                # Write
+                with open("results.txt", "a") as f:
+                    f.write(s + "%10.4g" * 7 % results + "\n")  # P, R, mAP, F1, test_losses=(GIoU, obj, cls)
 
-        # Tensorboard
-        if tb_writer:
-            tags = ["train/giou_loss", "train/obj_loss", "train/cls_loss",
-                    "metrics/precision", "metrics/recall", "metrics/mAP_0.5", "metrics/F1",
-                    "val/giou_loss", "val/obj_loss", "val/cls_loss"]
-            for scalar_value, tag in zip(list(mean_losses[:-1]) + list(results), tags):
-                tb_writer.add_scalar(tag, scalar_value, epoch)
+                # Tensorboard
+                if tb_writer:
+                    tags = ["train/giou_loss", "train/obj_loss", "train/cls_loss",
+                            "metrics/precision", "metrics/recall", "metrics/mAP_0.5", "metrics/F1",
+                            "val/giou_loss", "val/obj_loss", "val/cls_loss"]
+                    for scalar_value, tag in zip(list(mean_losses[:-1]) + list(results), tags):
+                        tb_writer.add_scalar(tag, scalar_value, epoch)
 
-        # Update best mAP
-        fi = fitness(np.array(results).reshape(1, -1))  # fitness_i = weighted combination of [P, R, mAP, F1]
-        if fi > best_fitness:
-            best_fitness = fi
+                # Update best mAP
+                fi = fitness(np.array(results).reshape(1, -1))  # fitness_i = weighted combination of [P, R, mAP, F1]
+                if fi > best_fitness:
+                    best_fitness = fi
 
-        # Save model
-        save = (not args.nosave) or (final_epoch and not args.evolve)
-        if save:
-            with open("results.txt", "r") as f:  # create checkpoint
-                state = {"epoch": epoch,
-                         "best_fitness": best_fitness,
-                         "training_results": f.read(),
-                         "state_dict": ema.ema.module.state_dict() if hasattr(model, 'module') else ema.ema.state_dict(),
-                         "optimizer": None if final_epoch else optimizer.state_dict()}
+            # Save model
+            save = (not args.nosave) or (final_epoch and not args.evolve)
+            if save:
+                with open("results.txt", "r") as f:  # create checkpoint
+                    state = {"epoch": epoch,
+                             "best_fitness": best_fitness,
+                             "training_results": f.read(),
+                             "state_dict": ema.ema.module.state_dict() if hasattr(model,
+                                                                                  "module") else ema.ema.state_dict(),
+                             "optimizer": None if final_epoch else optimizer.state_dict()}
 
-            # Save last, best and delete
-            torch.save(state, "weights/checkpoint.pth")
-            if (best_fitness == fi) and not final_epoch:
-                state = {"epoch": -1,
-                         "best_fitness": None,
-                         "training_results": None,
-                         "state_dict": ema.ema.module.state_dict() if hasattr(model, 'module') else ema.ema.state_dict(),
-                         "optimizer": None}
-                torch.save(state, "weights/model_best.pth")
-            del state
+                # Save last, best and delete
+                torch.save(state, "weights/checkpoint.pth")
+                if (best_fitness == fi) and not final_epoch:
+                    state = {"epoch": -1,
+                             "best_fitness": None,
+                             "training_results": None,
+                             "state_dict": ema.ema.module.state_dict() if hasattr(model,
+                                                                                  "module") else ema.ema.state_dict(),
+                             "optimizer": None}
+                    torch.save(state, "weights/model_best.pth")
+                del state
 
-    if not args.evolve:
-        plot_results()  # save as results.png
-    print(f"{epoch - start_epoch + 1} epochs completed in {(time.time() - t0) / 3600:.3f} hours.\n")
-    dist.destroy_process_group() if device.type != "cpu" and torch.cuda.device_count() > 1 else None
+        if rank in [-1, 0]:
+            if not args.evolve:
+                plot_results()  # save as results.png
+            print(f"{epoch - start_epoch + 1} epochs completed in {(time.time() - t0) / 3600:.3f} hours.\n")
+
+    dist.destroy_process_group() if rank not in [-1, 0] else None
     torch.cuda.empty_cache()
     return results
 
@@ -404,20 +453,37 @@ if __name__ == "__main__":
                         help="cache images for faster training.")
     parser.add_argument("--weights", type=str, default="",
                         help="Initial weights path. (default: ``)")
+    parser.add_argument("--name", default="",
+                        help="renames results.txt to results_name.txt if supplied.")
     parser.add_argument("--device", default="",
                         help="device id (i.e. 0 or 0,1 or cpu).")
     parser.add_argument("--single-cls", action="store_true",
                         help="train as single-class dataset")
+    parser.add_argument("--sync-bn", action="store_true",
+                        help="use SyncBatchNorm, only available in DDP mode")
+    parser.add_argument("--local_rank", type=int, default=-1,
+                        help="DDP parameter, do not modify")
     args = parser.parse_args()
 
     args.weights = "weights/checkpoint.pth" if args.resume and not args.weights else args.weights
-
-    print(args)
     args.image_size.extend([args.image_size[-1]] * (2 - len(args.image_size)))  # extend to 2 sizes (train, test)
     device = select_device(args.device, apex=mixed_precision, batch_size=args.batch_size)
-    # check_git_status()
+    args.total_batch_size = args.batch_size
+    args.world_size = 1
+
     if device.type == "cpu":
         mixed_precision = False
+    elif args.local_rank != -1:
+        # DDP mode
+        assert torch.cuda.device_count() > args.local_rank
+        torch.cuda.set_device(args.local_rank)
+        device = torch.device("cuda", args.local_rank)
+        dist.init_process_group(backend="nccl", init_method="env://")  # distributed backend
+
+        args.world_size = dist.get_world_size()
+        assert args.batch_size % args.world_size == 0, "Batch size is not a multiple of the number of devices given!"
+        args.batch_size = args.total_batch_size // args.world_size
+    print(args)
 
     try:
         os.makedirs("weights")
@@ -426,9 +492,12 @@ if __name__ == "__main__":
 
     # Train
     if not args.evolve:
-        tb_writer = SummaryWriter()
-        print("Start Tensorboard with `tensorboard --logdir=runs`, view at http://localhost:6006/")
-        train(hyper_parameters)
+        if args.local_rank in [-1, 0]:
+            print("Start Tensorboard with 'tensorboard --logdir=runs', view at http://localhost:6006/")
+            tb_writer = SummaryWriter()
+        else:
+            tb_writer = None
+        train(hyper_parameters, tb_writer, args, device)
 
     # Evolve hyper parameters (optional)
     else:
