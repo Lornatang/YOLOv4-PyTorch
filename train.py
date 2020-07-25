@@ -327,5 +327,5 @@ if __name__ == "__main__":
 
     # Train
     print("Start Tensorboard with `tensorboard --logdir=runs`, view at http://localhost:6006/")
-    tb_writer = SummaryWriter(log_dir="runs")
+    tb_writer = SummaryWriter()
     train()
