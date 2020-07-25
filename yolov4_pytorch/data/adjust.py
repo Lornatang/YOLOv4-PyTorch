@@ -19,11 +19,11 @@ for orientation in ExifTags.TAGS.keys():
         break
 
 
-def exif_size(img):
+def exif_size(image):
     # Returns exif-corrected PIL size
-    s = img.size  # (width, height)
+    s = image.size  # (width, height)
     try:
-        rotation = dict(img._getexif().items())[orientation]
+        rotation = dict(image._getexif().items())[orientation]
         if rotation == 6:  # rotation 270
             s = (s[1], s[0])
         elif rotation == 8:  # rotation 90

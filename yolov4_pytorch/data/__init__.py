@@ -14,7 +14,6 @@
 from .adjust import exif_size
 from .common import check_image_size
 from .common import create_folder
-from .common import cutout
 from .common import random_affine
 from .image import LoadImages
 from .image import LoadImagesAndLabels
@@ -31,7 +30,6 @@ __all__ = [
     "exif_size",
     "check_image_size",
     "create_folder",
-    "cutout",
     "random_affine",
     "LoadImages",
     "LoadImagesAndLabels",
