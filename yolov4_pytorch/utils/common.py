@@ -15,11 +15,10 @@ import glob
 import math
 import os
 from contextlib import contextmanager
-from pathlib import Path
 
-import torch.distributed
 import numpy as np
 import torch
+import torch.distributed
 import yaml
 from tqdm import tqdm
 
@@ -133,16 +132,6 @@ def check_anchors(dataset, model, thr=4.0, image_size=640):
     print('')  # newline
 
 
-def increment_dir(dir, comment=''):
-    # Increments a directory runs/exp1 --> runs/exp2_comment
-    n = 0  # number
-    dir = str(Path(dir))  # os-agnostic
-    d = sorted(glob.glob(dir + '*'))  # directories
-    if len(d):
-        n = max([int(x[len(dir):x.find('_') if '_' in x else None]) for x in d]) + 1  # increment
-    return dir + str(n) + ('_' + comment if comment else '')
-
-
 def check_file(file):
     # Searches for file if not found locally
     if os.path.isfile(file):
@@ -153,22 +142,11 @@ def check_file(file):
         return files[0]  # return first file if multiple found
 
 
-def coco80_to_coco91_class():  # converts 80-index (val2014) to 91-index (paper)
-    # https://tech.amikelive.com/node-718/what-object-categories-labels-are-in-coco-dataset/
-    # a = np.loadtxt('data/coco.names', dtype='str', delimiter='\n')
-    # b = np.loadtxt('data/coco_paper.names', dtype='str', delimiter='\n')
-    # x1 = [list(a[i] == b).index(True) + 1 for i in range(80)]  # darknet to coco
-    # x2 = [list(b[i] == a).index(True) if any(b[i] == a) else None for i in range(91)]  # coco to darknet
+def coco80_to_coco91_class():
     x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 31, 32, 33, 34,
          35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
          64, 65, 67, 70, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 84, 85, 86, 87, 88, 89, 90]
     return x
-
-
-def get_latest_run(search_dir='./runs'):
-    # Return path to most recent 'last.pt' in /runs (i.e. to --resume from)
-    last_list = glob.glob(f'{search_dir}/**/last*.pt', recursive=True)
-    return max(last_list, key=os.path.getctime)
 
 
 def make_divisible(x, divisor):

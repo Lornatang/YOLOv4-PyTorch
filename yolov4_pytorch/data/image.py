@@ -38,10 +38,12 @@ vid_formats = ['.mov', '.avi', '.mp4', '.mpg', '.mpeg', '.m4v', '.wmv', '.mkv']
 
 
 def create_dataloader(dataroot, image_size, batch_size, hyper_parameters=None, augment=None, cache=None, rect=None):
-    # Make sure only the first process in DDP process the dataset first, and the following others can use the cache.
-    dataset = LoadImagesAndLabels(dataroot, image_size, batch_size,
+    print(dataroot)
+    dataset = LoadImagesAndLabels(dataroot=dataroot,
+                                  image_size=image_size,
+                                  batch_size=batch_size,
                                   augment=augment,  # augment images
-                                  hyp=hyper_parameters,  # augmentation hyper parameters
+                                  hyper_parameters=hyper_parameters,  # augmentation hyper parameters
                                   rect=rect,  # rectangular training
                                   cache_images=cache,
                                   stride=32)
@@ -62,8 +64,8 @@ def get_hash(files):
 
 
 class LoadImages:  # for inference
-    def __init__(self, path, img_size=640):
-        p = str(Path(path))  # os-agnostic
+    def __init__(self, dataroot, image_size=640):
+        p = str(Path(dataroot))  # os-agnostic
         p = os.path.abspath(p)  # absolute path
         if '*' in p:
             files = sorted(glob.glob(p))  # glob
@@ -78,7 +80,7 @@ class LoadImages:  # for inference
         videos = [x for x in files if os.path.splitext(x)[-1].lower() in vid_formats]
         ni, nv = len(images), len(videos)
 
-        self.img_size = img_size
+        self.img_size = image_size
         self.files = images + videos
         self.nf = ni + nv  # number of files
         self.video_flag = [False] * ni + [True] * nv
@@ -143,11 +145,11 @@ class LoadImages:  # for inference
 
 
 class LoadImagesAndLabels(Dataset):  # for training/testing
-    def __init__(self, path, img_size=640, batch_size=16, augment=False, hyp=None, rect=False, image_weights=False,
+    def __init__(self, dataroot, image_size=640, batch_size=16, augment=False, hyper_parameters=None, rect=False,
                  cache_images=False, stride=32):
         try:
             f = []  # image files
-            for p in path if isinstance(path, list) else [path]:
+            for p in dataroot if isinstance(dataroot, list) else [dataroot]:
                 p = str(Path(p))  # os-agnostic
                 parent = str(Path(p).parent) + os.sep
                 if os.path.isfile(p):  # file
@@ -161,22 +163,21 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
             self.img_files = sorted(
                 [x.replace('/', os.sep) for x in f if os.path.splitext(x)[-1].lower() in img_formats])
         except Exception as e:
-            raise Exception('Error loading data from %s: %s\nSee %s' % (path, e, help_url))
+            raise Exception('Error loading data from %s: %s\nSee %s' % (dataroot, e, help_url))
 
         n = len(self.img_files)
-        assert n > 0, 'No images found in %s. See %s' % (path, help_url)
+        assert n > 0, 'No images found in %s. See %s' % (dataroot, help_url)
         bi = np.floor(np.arange(n) / batch_size).astype(np.int)  # batch index
         nb = bi[-1] + 1  # number of batches
 
         self.n = n  # number of images
         self.batch = bi  # batch index of image
-        self.img_size = img_size
+        self.image_size = image_size
         self.augment = augment
-        self.hyp = hyp
-        self.image_weights = image_weights
-        self.rect = False if image_weights else rect
+        self.hyper_parameters = hyper_parameters
+        self.rect = rect
         self.mosaic = self.augment and not self.rect  # load 4 images at a time into a mosaic (only during training)
-        self.mosaic_border = [-img_size // 2, -img_size // 2]
+        self.mosaic_border = [-image_size // 2, -image_size // 2]
         self.stride = stride
 
         # Define labels
@@ -219,7 +220,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                 elif mini > 1:
                     shapes[i] = [1, 1 / mini]
 
-            self.batch_shapes = np.ceil(np.array(shapes) * img_size / stride).astype(np.int) * stride
+            self.batch_shapes = np.ceil(np.array(shapes) * image_size / stride).astype(np.int) * stride
 
         # Cache labels
         create_datasubset, extract_bounding_boxes, labels_loaded = False, False, False
@@ -245,7 +246,6 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                     exclude_classes = 43
                     if exclude_classes not in l[:, 0]:
                         ns += 1
-                        # shutil.copy(src=self.img_files[i], dst='./datasubset/images/')  # copy image
                         with open('./datasubset/images.txt', 'a') as f:
                             f.write(self.img_files[i] + '\n')
 
@@ -318,35 +318,19 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
     def __len__(self):
         return len(self.img_files)
 
-    # def __iter__(self):
-    #     self.count = -1
-    #     print('ran dataset iter')
-    #     #self.shuffled_vector = np.random.permutation(self.nF) if self.augment else np.arange(self.nF)
-    #     return self
-
     def __getitem__(self, index):
-        if self.image_weights:
-            index = self.indices[index]
-
-        hyp = self.hyp
+        hyper_parameters = self.hyper_parameters
         if self.mosaic:
             # Load mosaic
             img, labels = load_mosaic(self, index)
             shapes = None
-
-            # MixUp https://arxiv.org/pdf/1710.09412.pdf
-            # if random.random() < 0.5:
-            #     img2, labels2 = load_mosaic(self, random.randint(0, len(self.labels) - 1))
-            #     r = np.random.beta(0.3, 0.3)  # mixup ratio, alpha=beta=0.3
-            #     img = (img * r + img2 * (1 - r)).astype(np.uint8)
-            #     labels = np.concatenate((labels, labels2), 0)
 
         else:
             # Load image
             img, (h0, w0), (h, w) = load_image(self, index)
 
             # Letterbox
-            shape = self.batch_shapes[self.batch[index]] if self.rect else self.img_size  # final letterboxed shape
+            shape = self.batch_shapes[self.batch[index]] if self.rect else self.image_size  # final letterboxed shape
             img, ratio, pad = letterbox(img, shape, auto=False, scaleup=self.augment)
             shapes = (h0, w0), ((h / h0, w / w0), pad)  # for COCO mAP rescaling
 
@@ -365,13 +349,14 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
             # Augment imagespace
             if not self.mosaic:
                 img, labels = random_affine(img, labels,
-                                            degrees=hyp['degrees'],
-                                            translate=hyp['translate'],
-                                            scale=hyp['scale'],
-                                            shear=hyp['shear'])
+                                            degrees=hyper_parameters['degrees'],
+                                            translate=hyper_parameters['translate'],
+                                            scale=hyper_parameters['scale'],
+                                            shear=hyper_parameters['shear'])
 
             # Augment colorspace
-            augment_hsv(img, hgain=hyp['hsv_h'], sgain=hyp['hsv_s'], vgain=hyp['hsv_v'])
+            augment_hsv(img, hgain=hyper_parameters['hsv_h'], sgain=hyper_parameters['hsv_s'],
+                        vgain=hyper_parameters['hsv_v'])
 
             # Apply cutouts
             # if random.random() < 0.9:
@@ -427,7 +412,7 @@ def load_image(self, index):
         img = cv2.imread(path)  # BGR
         assert img is not None, 'Image Not Found ' + path
         h0, w0 = img.shape[:2]  # orig hw
-        r = self.img_size / max(h0, w0)  # resize image to img_size
+        r = self.image_size / max(h0, w0)  # resize image to img_size
         if r != 1:  # always resize down, only resize up if training with augmentation
             interp = cv2.INTER_AREA if r < 1 and not self.augment else cv2.INTER_LINEAR
             img = cv2.resize(img, (int(w0 * r), int(h0 * r)), interpolation=interp)
@@ -440,7 +425,7 @@ def load_mosaic(self, index):
     # loads images in a mosaic
 
     labels4 = []
-    s = self.img_size
+    s = self.image_size
     yc, xc = [int(random.uniform(-x, 2 * s + x)) for x in self.mosaic_border]  # mosaic center x, y
     indices = [index] + [random.randint(0, len(self.labels) - 1) for _ in range(3)]  # 3 additional image indices
     for i, index in enumerate(indices):
@@ -479,19 +464,14 @@ def load_mosaic(self, index):
     # Concat/clip labels
     if len(labels4):
         labels4 = np.concatenate(labels4, 0)
-        # np.clip(labels4[:, 1:] - s / 2, 0, s, out=labels4[:, 1:])  # use with center crop
         np.clip(labels4[:, 1:], 0, 2 * s, out=labels4[:, 1:])  # use with random_affine
 
-        # Replicate
-        # img4, labels4 = replicate(img4, labels4)
-
     # Augment
-    # img4 = img4[s // 2: int(s * 1.5), s // 2:int(s * 1.5)]  # center crop (WARNING, requires box pruning)
     img4, labels4 = random_affine(img4, labels4,
-                                  degrees=self.hyp['degrees'],
-                                  translate=self.hyp['translate'],
-                                  scale=self.hyp['scale'],
-                                  shear=self.hyp['shear'],
+                                  degrees=self.hyper_parameters['degrees'],
+                                  translate=self.hyper_parameters['translate'],
+                                  scale=self.hyper_parameters['scale'],
+                                  shear=self.hyper_parameters['shear'],
                                   border=self.mosaic_border)  # border to remove
 
     return img4, labels4

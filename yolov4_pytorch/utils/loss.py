@@ -85,7 +85,7 @@ def build_targets(p, targets, model):
         a, t, offsets = [], targets * gain, 0
         if nt:
             r = t[None, :, 4:6] / anchors[:, None]  # wh ratio
-            j = torch.max(r, 1. / r).max(2)[0] < model.hyp['anchor_t']  # compare
+            j = torch.max(r, 1. / r).max(2)[0] < model.hyper_parameters['anchor_t']  # compare
             # j = wh_iou(anchors, t[:, 4:6]) > model.hyp['iou_t']  # iou(3,n) = wh_iou(anchors(3,2), gwh(n,2))
             a, t = at[j], t.repeat(na, 1, 1)[j]  # filter
 
@@ -152,7 +152,7 @@ def compute_loss(p, targets, model):  # predictions, targets, model
     ft = torch.cuda.FloatTensor if p[0].is_cuda else torch.Tensor
     lcls, lbox, lobj = ft([0]).to(device), ft([0]).to(device), ft([0]).to(device)
     tcls, tbox, indices, anchors = build_targets(p, targets, model)  # targets
-    h = model.hyp  # hyperparameters
+    h = model.hyper_parameters  # hyperparameters
     red = 'mean'  # Loss reduction (sum or mean)
 
     # Define criteria
