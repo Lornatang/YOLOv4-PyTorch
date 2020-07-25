@@ -159,12 +159,12 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                     f += glob.iglob(p + os.sep + '*.*')
                 else:
                     raise Exception('%s does not exist' % p)
-            self.img_files = sorted(
+            self.image_files = sorted(
                 [x.replace('/', os.sep) for x in f if os.path.splitext(x)[-1].lower() in img_formats])
         except Exception as e:
             raise Exception('Error loading data from %s: %s\nSee %s' % (dataroot, e, help_url))
 
-        n = len(self.img_files)
+        n = len(self.image_files)
         assert n > 0, 'No images found in %s. See %s' % (dataroot, help_url)
         bi = np.floor(np.arange(n) / batch_size).astype(np.int)  # batch index
         nb = bi[-1] + 1  # number of batches
@@ -181,19 +181,19 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
 
         # Define labels
         self.label_files = [x.replace('images', 'labels').replace(os.path.splitext(x)[-1], '.txt') for x in
-                            self.img_files]
+                            self.image_files]
 
         # Check cache
         cache_path = str(Path(self.label_files[0]).parent) + '.cache'  # cached labels
         if os.path.isfile(cache_path):
             cache = torch.load(cache_path)  # load
-            if cache['hash'] != get_hash(self.label_files + self.img_files):  # dataset changed
+            if cache['hash'] != get_hash(self.label_files + self.image_files):  # dataset changed
                 cache = self.cache_labels(cache_path)  # re-cache
         else:
             cache = self.cache_labels(cache_path)  # cache
 
         # Get labels
-        labels, shapes = zip(*[cache[x] for x in self.img_files])
+        labels, shapes = zip(*[cache[x] for x in self.image_files])
         self.shapes = np.array(shapes, dtype=np.float64)
         self.labels = list(labels)
 
@@ -203,7 +203,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
             s = self.shapes  # wh
             ar = s[:, 1] / s[:, 0]  # aspect ratio
             irect = ar.argsort()
-            self.img_files = [self.img_files[i] for i in irect]
+            self.image_files = [self.image_files[i] for i in irect]
             self.label_files = [self.label_files[i] for i in irect]
             self.labels = [self.labels[i] for i in irect]
             self.shapes = s[irect]  # wh
@@ -246,11 +246,11 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                     if exclude_classes not in l[:, 0]:
                         ns += 1
                         with open('./datasubset/images.txt', 'a') as f:
-                            f.write(self.img_files[i] + '\n')
+                            f.write(self.image_files[i] + '\n')
 
                 # Extract object detection boxes for a second stage classifier
                 if extract_bounding_boxes:
-                    p = Path(self.img_files[i])
+                    p = Path(self.image_files[i])
                     img = cv2.imread(str(p))
                     h, w = img.shape[:2]
                     for j, x in enumerate(l):
@@ -281,7 +281,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         self.imgs = [None] * n
         if cache_images:
             gb = 0  # Gigabytes of cached images
-            pbar = tqdm(range(len(self.img_files)), desc='Caching images')
+            pbar = tqdm(range(len(self.image_files)), desc='Caching images')
             self.img_hw0, self.img_hw = [None] * n, [None] * n
             for i in pbar:  # max 10k images
                 self.imgs[i], self.img_hw0[i], self.img_hw[i] = load_image(self, i)  # img, hw_original, hw_resized
@@ -291,7 +291,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
     def cache_labels(self, path='labels.cache'):
         # Cache dataset labels, check images and read shapes
         x = {}  # dict
-        pbar = tqdm(zip(self.img_files, self.label_files), desc='Scanning images', total=len(self.img_files))
+        pbar = tqdm(zip(self.image_files, self.label_files), desc='Scanning images', total=len(self.image_files))
         for (img, label) in pbar:
             try:
                 l = []
@@ -310,12 +310,12 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                 x[img] = None
                 print('WARNING: %s: %s' % (img, e))
 
-        x['hash'] = get_hash(self.label_files + self.img_files)
+        x['hash'] = get_hash(self.label_files + self.image_files)
         torch.save(x, path)  # save for next time
         return x
 
     def __len__(self):
-        return len(self.img_files)
+        return len(self.image_files)
 
     def __getitem__(self, index):
         hyper_parameters = self.hyper_parameters
@@ -393,7 +393,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
         img = np.ascontiguousarray(img)
 
-        return torch.from_numpy(img), labels_out, self.img_files[index], shapes
+        return torch.from_numpy(img), labels_out, self.image_files[index], shapes
 
     @staticmethod
     def collate_fn(batch):
@@ -407,7 +407,7 @@ def load_image(self, index):
     # loads 1 image from dataset, returns img, original hw, resized hw
     img = self.imgs[index]
     if img is None:  # not cached
-        path = self.img_files[index]
+        path = self.image_files[index]
         img = cv2.imread(path)  # BGR
         assert img is not None, 'Image Not Found ' + path
         h0, w0 = img.shape[:2]  # orig hw

@@ -28,7 +28,7 @@ from apex import amp
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from test import evalution
+from test import evaluate
 from yolov4_pytorch.data import check_image_size
 from yolov4_pytorch.data import create_dataloader
 from yolov4_pytorch.model import YOLO
@@ -76,7 +76,7 @@ def train():
         data_dict = yaml.load(f, Loader=yaml.FullLoader)
     train_path, val_path = data_dict["train"], data_dict["val"]
     number_classes, names = int(data_dict["number_classes"]), data_dict["names"]
-    assert len(names) == number_classes, f"{len(names)} names found for nc={number_classes} dataset in {args.data}"
+    assert len(names) == number_classes, f"{len(names)} names found for nc={number_classes} dataset in {data}"
 
     # Create model
     model = YOLO(config_file, number_classes=number_classes).to(device)
@@ -110,13 +110,15 @@ def train():
         # load model
         try:
             exclude = ["anchor"]  # exclude keys
-            checkpoint["state_dict"] = {k: v for k, v in checkpoint["state_dict"].float().state_dict().items()
+            checkpoint["state_dict"] = {k: v for k, v in checkpoint["state_dict"].items()
                                         if k in model.state_dict() and not any(x in k for x in exclude)
                                         and model.state_dict()[k].shape == v.shape}
             model.load_state_dict(checkpoint["state_dict"], strict=False)
         except KeyError as e:
-            s = "The model parameter file does not match!"
-            raise KeyError(s) from e
+            error_msg = f"{weights} is not compatible with {config_file}. "
+            error_msg += f"Specify --weights `` or specify a --config-file "
+            error_msg += f"compatible with {weights}. "
+            raise KeyError(error_msg) from e
 
         # load optimizer
         if checkpoint["optimizer"] is not None:
@@ -250,12 +252,12 @@ def train():
 
         ema.update_attr(model)
         final_epoch = epoch + 1 == epochs
-        results, maps, times = evalution(data=args.data,
-                                         batch_size=batch_size,
-                                         image_size=image_size,
-                                         save_json=final_epoch and args.data[-9:] == "coco.yaml",
-                                         model=ema.ema.module if hasattr(ema.ema, "module") else ema.ema,
-                                         dataloader=val_dataloader)
+        results, maps = evaluate(data=data,
+                                 batch_size=batch_size,
+                                 image_size=image_size,
+                                 save_json=final_epoch and args.data[-9:] == "coco.yaml",
+                                 model=ema.ema.module if hasattr(ema.ema, "module") else ema.ema,
+                                 dataloader=val_dataloader)
 
         # Tensorboard
         tags = ["train/giou_loss", "train/obj_loss", "train/cls_loss",

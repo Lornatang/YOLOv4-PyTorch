@@ -16,15 +16,15 @@ import glob
 import json
 import os
 import shutil
-from pathlib import Path
 
 import numpy as np
 import torch
+import torch.distributed
+import torch.utils.data
 import yaml
 from tqdm import tqdm
 
-from yolov4_pytorch.data import check_image_size
-from yolov4_pytorch.data import create_dataloader
+from yolov4_pytorch.data import LoadImagesAndLabels
 from yolov4_pytorch.model import YOLO
 from yolov4_pytorch.utils import ap_per_class
 from yolov4_pytorch.utils import box_iou
@@ -40,46 +40,42 @@ from yolov4_pytorch.utils import xyxy2xywh
 
 
 def evaluate(data,
-             weights=None,
              batch_size=16,
              image_size=640,
-             confidence_thresholds=0.001,
-             iou_thresholds=0.6,  # for NMS
              save_json=False,
-             augment=False,
-             verbose=False,
              model=None,
-             dataloader=None,
-             merge=False,
-             save_txt=False):
+             dataloader=None):
+    # Configure
+    config_file = args.config_file
+    weights = args.weights
+    confidence_thresholds = args.confidence_thresholds
+    iou_thresholds = args.iou_thresholds
+    merge = args.merge
+    verbose = args.verbose
+    save_txt = args.save_txt
+    device = select_device(args.device, batch_size=args.batch_size)
+
+    with open(data) as f:
+        data_dict = yaml.load(f, Loader=yaml.FullLoader)
+    number_classes, names = int(data_dict["number_classes"]), data_dict["names"]
+    assert len(names) == number_classes, f"{len(names)} names found for nc={number_classes} dataset in {data}"
+
     # Initialize/load model and set device
     training = model is not None
     if training:  # called by train.py
         device = next(model.parameters()).device  # get model device
 
     else:  # called directly
-        device = select_device(args.device, batch_size=args.batch_size)
-        merge, save_txt = args.merge, args.save_txt  # use Merge NMS, save *.txt labels
-
         if save_txt:
             if os.path.exists('outputs'):
                 shutil.rmtree('outputs')  # delete output folder
             os.makedirs('outputs')  # make new output folder
 
-        with open(data) as f:
-            data_dict = yaml.load(f, Loader=yaml.FullLoader)
-
         # Create model
-        model = YOLO(args.config_file, number_classes=int(data_dict["number_classes"])).to(device)
+        model = YOLO(config_file=config_file, number_classes=number_classes).to(device)
 
         # Load model
-        model.load_state_dict(torch.load(weights))
-
-        # Image sizes
-        image_size = check_image_size(args.image_size, 32)
-
-    number_classes, names = int(data_dict["number_classes"]), data_dict["names"]
-    assert len(names) == number_classes, f"{len(names)} names found for nc={number_classes} dataset in {args.data}"
+        model.load_state_dict(torch.load(weights)["state_dict"])
 
     # Half
     half = device.type != 'cpu'  # half precision only supported on CUDA
@@ -96,15 +92,17 @@ def evaluate(data,
     if not training:
         image = torch.zeros((1, 3, image_size, image_size), device=device)  # init img
         _ = model(image.half() if half else image) if device.type != 'cpu' else None  # run once
-        dataroot = data_dict['test'] if args.task == 'test' else data_dict['val']  # path to val/test images
+        dataroot = data_dict['test'] if data_dict['test'] else data_dict['val']  # path to val/test images
 
-        _, dataloader = create_dataloader(dataroot=dataroot,
-                                          image_size=image_size,
-                                          batch_size=batch_size,
-                                          hyper_parameters=None,
-                                          augment=False,
-                                          cache=args.cache_images,
-                                          rect=True)
+        dataset = LoadImagesAndLabels(dataroot=dataroot,
+                                      image_size=image_size,
+                                      batch_size=batch_size,
+                                      rect=True)
+        dataloader = torch.utils.data.DataLoader(dataset=dataset,
+                                                 batch_size=batch_size,
+                                                 num_workers=8,
+                                                 pin_memory=True,
+                                                 collate_fn=dataset.collate_fn)
 
     seen = 0
     coco91class = coco80_to_coco91_class()
@@ -112,7 +110,7 @@ def evaluate(data,
     p, r, f1, mp, mr, map50, map, inference_time, nms_time = 0., 0., 0., 0., 0., 0., 0., 0., 0.
     loss = torch.zeros(3, device=device)
     jdict, stats, ap, ap_class = [], [], [], []
-    for batch_i, (image, targets, paths, shapes) in enumerate(tqdm(dataloader, desc=context)):
+    for _, (image, targets, paths, shapes) in enumerate(tqdm(dataloader, desc=context)):
         image = image.to(device, non_blocking=True)
         image = image.half() if half else image.float()  # uint8 to fp16/32
         image /= 255.0  # 0 - 255 to 0.0 - 1.0
@@ -124,7 +122,7 @@ def evaluate(data,
         with torch.no_grad():
             # Run model
             t = time_synchronized()
-            prediction, outputs = model(image, augment=augment)  # inference and training outputs
+            prediction, outputs = model(image, augment=False)  # inference and training outputs
             inference_time += time_synchronized() - t
 
             # Compute loss
@@ -153,7 +151,7 @@ def evaluate(data,
             # Append to text file
             if save_txt:
                 gn = torch.tensor(shapes[si][0])[[1, 0, 1, 0]]  # normalization gain whwh
-                txt_path = os.path.join("output", Path(paths[si]).stem)
+                txt_path = os.path.join("outputs", paths[si].split("/")[-1][:-4])
                 pred[:, :4] = scale_coords(image[si].shape[1:], pred[:, :4], shapes[si][0],
                                            shapes[si][1])  # to original
                 for *xyxy, conf, cls in pred:
@@ -167,7 +165,7 @@ def evaluate(data,
             # Append to pycocotools JSON dictionary
             if save_json:
                 # [{"image_id": 42, "category_id": 18, "bbox": [258.15, 41.29, 348.26, 243.78], "score": 0.236}, ...
-                image_id = Path(paths[si]).stem
+                image_id = si[:-4]
                 box = pred[:, :4].clone()  # xyxy
                 scale_coords(image[si].shape[1:], box, shapes[si][0], shapes[si][1])  # to original shape
                 box = xyxy2xywh(box)  # xywh
@@ -220,18 +218,21 @@ def evaluate(data,
         nt = torch.zeros(1)
 
     # Print results
-    print(f"{'all':>20}{seen:>12.3f}{nt.sum():>12.3f}{mp:>12.3f}{mr:>12.3f}{map50:>12.3f}{map:>12.3f}")
+    print(f"{'all':>20}{seen:>12}{nt.sum():>12}{mp:>12.3f}{mr:>12.3f}{map50:>12.3f}{map:>12.3f}")
 
     # Print results per class
-    if verbose and int(data_dict["number_classes"]) > 1 and len(stats):
+
+    if verbose:
         for i, c in enumerate(ap_class):
-            print(f"{names[c]:>20}{seen:>12.3f}{nt[c]:>12.3f}{p[i]:>12.3f}{r[i]:>12.3f}{ap50[i]:>12.3f}{ap[i]:>12.3f}")
+            print(f"{names[c]:>20}{seen:>12}{nt[c]:>12}{p[i]:>12.3f}{r[i]:>12.3f}{ap50[i]:>12.3f}{ap[i]:>12.3f}")
 
     # Print speeds
     if not training:
-        print(
-            f"Speed: {inference_time / seen * 1000:.1f}/{nms_time / seen * 1000:.1f}/{(inference_time + nms_time) / seen * 1000:.1f} ms "
-            f"inference/NMS/total per {image_size}x{image_size} image at batch-size {batch_size}")
+        print("Speed: "
+              f"{inference_time / seen * 1000:.1f}/"
+              f"{nms_time / seen * 1000:.1f}/"
+              f"{(inference_time + nms_time) / seen * 1000:.1f} ms "
+              f"inference/NMS/total per {image_size}x{image_size} image at batch-size {batch_size}")
 
     # Save JSON
     if save_json and len(jdict):
@@ -244,7 +245,7 @@ def evaluate(data,
             from pycocotools.coco import COCO
             from pycocotools.cocoeval import COCOeval
 
-            imgIds = [int(Path(x).stem) for x in dataloader.dataset.img_files]
+            imgIds = [int(x.split("/")[-1][:-4]) for x in dataloader.dataset.image_files]
             cocoGt = COCO(glob.glob('data/coco2017/annotations/instances_val*.json')[0])
             cocoDt = cocoGt.loadRes(f)  # initialize COCO pred api
             cocoEval = COCOeval(cocoGt, cocoDt, 'bbox')
@@ -266,32 +267,35 @@ def evaluate(data,
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='test.py')
-    parser.add_argument('--weights', nargs='+', type=str, default='yolov5-small.pth', help='model.pt path(s)')
-    parser.add_argument('--data', type=str, default='data/coco.yaml', help='*.data path')
-    parser.add_argument('--batch-size', type=int, default=32, help='size of each image batch')
-    parser.add_argument('--image-size', type=int, default=640, help='inference size (pixels)')
-    parser.add_argument('--conf-thres', type=float, default=0.001, help='object confidence threshold')
-    parser.add_argument('--iou-thres', type=float, default=0.65, help='IOU threshold for NMS')
-    parser.add_argument('--save-json', action='store_true', help='save a cocoapi-compatible JSON results file')
-    parser.add_argument('--task', default='test', help="'val', 'test'")
-    parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
-    parser.add_argument('--single-cls', action='store_true', help='treat as single-class dataset')
-    parser.add_argument('--augment', action='store_true', help='augmented inference')
+    parser.add_argument("--batch-size", type=int, default=32,
+                        help="mini-batch size (default: 32), this is the total "
+                             "batch size of all GPUs on the current node when "
+                             "using Data Parallel or Distributed Data Parallel")
+    parser.add_argument("--config-file", type=str, default="configs/COCO-Detection/yolov5-small.yaml",
+                        help="Neural network profile path. (default: `configs/COCO-Detection/yolov5-small.yaml`)")
+    parser.add_argument("--data", type=str, default="data/coco2017.yaml",
+                        help="Path to dataset. (default: data/coco2017.yaml)")
+    parser.add_argument("--image-size", type=int, default=640,
+                        help="Size of processing picture. (default: 640)")
+    parser.add_argument("--weights", type=str, default="weights/yolov5-small.pth",
+                        help="Initial weights path. (default: `weights/yolov5-small.pth`)")
+    parser.add_argument("--confidence-thresholds", type=float, default=0.001,
+                        help="Object confidence threshold. (default=0.001)")
+    parser.add_argument("--iou-thresholds", type=float, default=0.65,
+                        help="IOU threshold for NMS. (default=0.65)")
+    parser.add_argument("--save-json", action="store_true",
+                        help="save a cocoapi-compatible JSON results file")
     parser.add_argument('--merge', action='store_true', help='use Merge NMS')
     parser.add_argument('--verbose', action='store_true', help='report mAP by class')
     parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
+    parser.add_argument("--device", default="",
+                        help="device id i.e. `0` or `0,1` or `cpu`. (default: ``).")
     args = parser.parse_args()
     args.save_json |= args.data.endswith('coco.yaml')
 
     print(args)
 
-    evaluate(args.data,
-             args.weights,
-             args.batch_size,
-             args.image_size,
-             args.conf_thres,
-             args.iou_thres,
-             args.save_json,
-             args.single_cls,
-             args.augment,
-             args.verbose)
+    evaluate(data=args.data,
+             batch_size=args.batch_size,
+             image_size=args.image_size,
+             save_json=args.save_json)

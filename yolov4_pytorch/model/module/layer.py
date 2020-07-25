@@ -81,7 +81,7 @@ class Detect(nn.Module):
 
 
 class YOLO(nn.Module):
-    def __init__(self, config_file='yolov5-small.yaml', channels=3, number_classes=None):
+    def __init__(self, config_file='configs/yolov5-small.yaml', channels=3, number_classes=None):
         super(YOLO, self).__init__()
         if isinstance(config_file, dict):
             self.yaml = config_file  # model dict
