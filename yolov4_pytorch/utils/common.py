@@ -117,7 +117,7 @@ def check_anchors(dataset, model, thr=4.0, image_size=640):
     bpr = metric(m.anchor_grid.clone().cpu().view(-1, 2))
     print('Best Possible Recall (BPR) = %.4f' % bpr, end='')
     if bpr < 0.99:  # threshold to recompute
-        print('. Attempting to generate improved anchors, please wait...' % bpr)
+        print(f'. Attempting to generate improved anchors, please wait... {bpr}')
         na = m.anchor_grid.numel() // 2  # number of anchors
         new_anchors = kmean_anchors(dataset, n=na, img_size=image_size, thr=thr, gen=1000, verbose=False)
         new_bpr = metric(new_anchors.reshape(-1, 2))

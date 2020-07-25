@@ -18,17 +18,17 @@ import time
 
 import numpy as np
 import torch
-import torch.distributed as dist
+import torch.distributed
 import torch.nn.parallel
 import torch.optim
-import torch.optim.lr_scheduler as lr_scheduler
+import torch.optim.lr_scheduler
 import torch.utils.data
 import yaml
 from apex import amp
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-import test
+from test import evalution
 from yolov4_pytorch.data import check_image_size
 from yolov4_pytorch.data import create_dataloader
 from yolov4_pytorch.model import YOLO
@@ -64,25 +64,22 @@ def train():
     print(f"Hyper parameters {hyper_parameters}")
     epochs = args.epochs
     batch_size = args.batch_size
-    weights = args.weights
+    config_file = args.confif_file
+    data = args.data
+    weights = "weights/checkpoint" if args.resume and not args.weights else args.weights
+    image_size = check_image_size(args.image_size, 32)
+    device = select_device(args.device, batch_size=args.batch_size)
 
     # Configure
     init_seeds(0)
-
-    with open(args.data) as f:
+    with open(data) as f:
         data_dict = yaml.load(f, Loader=yaml.FullLoader)
-
-    train_path = data_dict["train"]
-    val_path = data_dict["val"]
-
+    train_path, val_path = data_dict["train"], data_dict["val"]
     number_classes, names = int(data_dict["number_classes"]), data_dict["names"]
     assert len(names) == number_classes, f"{len(names)} names found for nc={number_classes} dataset in {args.data}"
 
     # Create model
-    model = YOLO(args.config_file, number_classes=number_classes).to(device)
-
-    # Image sizes
-    image_size = check_image_size(args.image_size, 32)
+    model = YOLO(config_file, number_classes=number_classes).to(device)
 
     # Optimizer
     accumulate = max(round(64 / batch_size), 1)  # accumulate loss before optimizing
@@ -140,17 +137,17 @@ def train():
 
     # Scheduler https://arxiv.org/pdf/1812.01187.pdf
     lf = lambda x: (((1 + math.cos(x * math.pi / epochs)) / 2) ** 1.0) * 0.8 + 0.2  # cosine
-    scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
 
     # Initialize distributed training
     if device.type != "cpu" and torch.cuda.device_count() > 1 and torch.distributed.is_available():
-        dist.init_process_group(backend="nccl",  # "distributed backend"
-                                # distributed training init method
-                                init_method="tcp://127.0.0.1:18888",
-                                # number of nodes for distributed training
-                                world_size=1,
-                                # distributed training node rank
-                                rank=0)
+        torch.distributed.init_process_group(backend="nccl",  # "distributed backend"
+                                             # distributed training init method
+                                             init_method="tcp://127.0.0.1:18888",
+                                             # number of nodes for distributed training
+                                             world_size=1,
+                                             # distributed training node rank
+                                             rank=0)
         model = torch.nn.parallel.DistributedDataParallel(model)
 
     # Dataloader
@@ -171,7 +168,7 @@ def train():
 
     mlc = np.concatenate(train_dataset.labels, 0)[:, 0].max()  # max label class
     number_batches = len(train_dataloader)
-    assert mlc < number_classes, f"Label class {mlc} exceeds nc={number_classes} in {args.data}. " \
+    assert mlc < number_classes, f"Label class {mlc} exceeds number_classes={number_classes} in {args.data}. " \
                                  f"Possible class labels are 0-{number_classes - 1}"
 
     # Model parameters
@@ -187,7 +184,7 @@ def train():
 
     # Start training
     start_time = time.time()
-    nw = max(3 * number_batches, 1000)  # number of warmup iterations, max(3 epochs, 1k iterations)
+    pre_steps = max(3 * number_batches, 1000)  # number of warmup iterations, max(3 epochs, 1k iterations)
     results = (0, 0, 0, 0, 0, 0, 0)  # "P", "R", "mAP", "F1", "val GIoU", "val Objectness", "val Classification"
     scheduler.last_epoch = start_epoch - 1  # do not move
 
@@ -213,8 +210,8 @@ def train():
             images = images.to(device, non_blocking=True).float() / 255.0  # uint8 to float32, 0 - 255 to 0.0 - 1.0
 
             # Warm up
-            if ni <= nw:
-                xi = [0, nw]  # x interp
+            if ni <= pre_steps:
+                xi = [0, pre_steps]  # x interp
                 accumulate = max(1, np.interp(ni, xi, [1, 64 / batch_size]).round())
                 for j, x in enumerate(optimizer.param_groups):
                     # bias lr falls from 0.1 to lr0, all other lrs rise from 0.0 to lr0
@@ -253,12 +250,12 @@ def train():
 
         ema.update_attr(model)
         final_epoch = epoch + 1 == epochs
-        # results, maps, times = test.evalution(data=args.data,
-        #                                       batch_size=batch_size,
-        #                                       image_size=image_size,
-        #                                       save_json=final_epoch and args.data[-9:] == "coco.yaml",
-        #                                       model=ema.ema.module if hasattr(ema.ema, "module") else ema.ema,
-        #                                       dataloader=val_dataloader)
+        results, maps, times = evalution(data=args.data,
+                                         batch_size=batch_size,
+                                         image_size=image_size,
+                                         save_json=final_epoch and args.data[-9:] == "coco.yaml",
+                                         model=ema.ema.module if hasattr(ema.ema, "module") else ema.ema,
+                                         dataloader=val_dataloader)
 
         # Tensorboard
         tags = ["train/giou_loss", "train/obj_loss", "train/cls_loss",
@@ -276,7 +273,7 @@ def train():
         torch.save({"epoch": epoch,
                     "best_fitness": best_fitness,
                     "state_dict": ema.ema.module.state_dict() if hasattr(ema, "module") else ema.ema.state_dict(),
-                    "optimizer": optimizer.state_dict()}, "weights/checkpoint.pth")
+                    "optimizer": None if final_epoch else optimizer.state_dict()}, "weights/checkpoint.pth")
         if (best_fitness == fitness_i) and not final_epoch:
             torch.save({"epoch": -1,
                         "state_dict": ema.ema.module.state_dict() if hasattr(ema, "module") else ema.ema.state_dict(),
@@ -285,7 +282,7 @@ def train():
     # Finish
     print(f"{epoch - start_epoch} epochs completed in {(time.time() - start_time) / 3600:.3f} hours.\n")
 
-    dist.destroy_process_group()
+    torch.distributed.destroy_process_group()
     torch.cuda.empty_cache()
     return results
 
@@ -307,18 +304,15 @@ if __name__ == "__main__":
     parser.add_argument("--image-size", type=int, default=640,
                         help="Size of processing picture. (default: 640)")
     parser.add_argument("--resume", action="store_true",
-                        help="resume training from checkpoint.pth")
+                        help="resume training from `weights/checkpoint.pth`")
     parser.add_argument("--cache-images", action="store_true",
                         help="cache images for faster training.")
     parser.add_argument("--weights", type=str, default="",
                         help="Initial weights path. (default: ``)")
     parser.add_argument("--device", default="",
-                        help="device id (i.e. 0 or 0,1 or cpu).")
+                        help="device id i.e. `0` or `0,1` or `cpu`. (default: ``).")
     args = parser.parse_args()
     print(args)
-
-    args.weights = "weights/checkpoint" if args.resume and not args.weights else args.weights
-    device = select_device(args.device, batch_size=args.batch_size)
 
     # Train
     print("Start Tensorboard with `tensorboard --logdir=runs`, view at http://localhost:6006/")
