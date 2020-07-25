@@ -64,7 +64,7 @@ def train():
     print(f"Hyper parameters {hyper_parameters}")
     epochs = args.epochs
     batch_size = args.batch_size
-    config_file = args.confif_file
+    config_file = args.config_file
     data = args.data
     weights = "weights/checkpoint" if args.resume and not args.weights else args.weights
     image_size = check_image_size(args.image_size, 32)
