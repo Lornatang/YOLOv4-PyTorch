@@ -14,7 +14,6 @@
 from .common import ap_per_class
 from .common import check_anchor_order
 from .common import check_anchors
-from .common import check_file
 from .common import coco80_to_coco91_class
 from .common import kmean_anchors
 from .common import make_divisible
@@ -57,7 +56,6 @@ __all__ = [
     "ap_per_class",
     "check_anchor_order",
     "check_anchors",
-    "check_file",
     "coco80_to_coco91_class",
     "kmean_anchors",
     "compute_ap",

@@ -28,7 +28,6 @@ from yolov4_pytorch.data import create_dataloader
 from yolov4_pytorch.model import YOLO
 from yolov4_pytorch.utils import ap_per_class
 from yolov4_pytorch.utils import box_iou
-from yolov4_pytorch.utils import check_file
 from yolov4_pytorch.utils import clip_coords
 from yolov4_pytorch.utils import coco80_to_coco91_class
 from yolov4_pytorch.utils import compute_loss
@@ -40,20 +39,19 @@ from yolov4_pytorch.utils import xywh2xyxy
 from yolov4_pytorch.utils import xyxy2xywh
 
 
-def evalution(data,
-              weights=None,
-              batch_size=16,
-              image_size=640,
-              conf_thres=0.001,
-              iou_thres=0.6,  # for NMS
-              save_json=False,
-              augment=False,
-              verbose=False,
-              model=None,
-              dataloader=None,
-              merge=False,
-              save_txt=False):
-
+def evaluate(data,
+             weights=None,
+             batch_size=16,
+             image_size=640,
+             confidence_thresholds=0.001,
+             iou_thresholds=0.6,  # for NMS
+             save_json=False,
+             augment=False,
+             verbose=False,
+             model=None,
+             dataloader=None,
+             merge=False,
+             save_txt=False):
     # Initialize/load model and set device
     training = model is not None
     if training:  # called by train.py
@@ -100,18 +98,18 @@ def evalution(data,
         _ = model(image.half() if half else image) if device.type != 'cpu' else None  # run once
         dataroot = data_dict['test'] if args.task == 'test' else data_dict['val']  # path to val/test images
 
-        _, val_dataloader = create_dataloader(dataroot=dataroot,
-                                              image_size=image_size,
-                                              batch_size=batch_size,
-                                              hyper_parameters=None,
-                                              augment=False,
-                                              cache=args.cache_images,
-                                              rect=True)
+        _, dataloader = create_dataloader(dataroot=dataroot,
+                                          image_size=image_size,
+                                          batch_size=batch_size,
+                                          hyper_parameters=None,
+                                          augment=False,
+                                          cache=args.cache_images,
+                                          rect=True)
 
     seen = 0
     coco91class = coco80_to_coco91_class()
     context = f"{'Class':>20}{'Images':>12}{'Targets':>12}{'P':>12}{'R':>12}{'mAP@.5':>12}{'mAP@.5:.95':>12}"
-    p, r, f1, mp, mr, map50, map, t0, t1 = 0., 0., 0., 0., 0., 0., 0., 0., 0.
+    p, r, f1, mp, mr, map50, map, inference_time, nms_time = 0., 0., 0., 0., 0., 0., 0., 0., 0.
     loss = torch.zeros(3, device=device)
     jdict, stats, ap, ap_class = [], [], [], []
     for batch_i, (image, targets, paths, shapes) in enumerate(tqdm(dataloader, desc=context)):
@@ -126,17 +124,19 @@ def evalution(data,
         with torch.no_grad():
             # Run model
             t = time_synchronized()
-            inf_out, train_out = model(image, augment=augment)  # inference and training outputs
-            t0 += time_synchronized() - t
+            prediction, outputs = model(image, augment=augment)  # inference and training outputs
+            inference_time += time_synchronized() - t
 
             # Compute loss
             if training:  # if model has loss hyper parameters
-                loss += compute_loss([x.float() for x in train_out], targets, model)[1][:3]  # GIoU, obj, cls
+                loss += compute_loss([x.float() for x in outputs], targets, model)[1][:3]  # GIoU, obj, cls
 
             # Run NMS
             t = time_synchronized()
-            output = non_max_suppression(inf_out, conf_thres=conf_thres, iou_thres=iou_thres, merge=merge)
-            t1 += time_synchronized() - t
+            output = non_max_suppression(prediction=prediction,
+                                         confidence_thresholds=confidence_thresholds,
+                                         iou_thresholds=iou_thresholds, merge=merge)
+            nms_time += time_synchronized() - t
 
         # Statistics per image
         for si, pred in enumerate(output):
@@ -220,24 +220,23 @@ def evalution(data,
         nt = torch.zeros(1)
 
     # Print results
-    pf = '%20s' + '%12.3g' * 6  # print format
-    print(pf % ('all', seen, nt.sum(), mp, mr, map50, map))
+    print(f"{'all':>20}{seen:>12.3f}{nt.sum():>12.3f}{mp:>12.3f}{mr:>12.3f}{map50:>12.3f}{map:>12.3f}")
 
     # Print results per class
-    if verbose and int(data_dict["nc"]) > 1 and len(stats):
+    if verbose and int(data_dict["number_classes"]) > 1 and len(stats):
         for i, c in enumerate(ap_class):
-            print(pf % (names[c], seen, nt[c], p[i], r[i], ap50[i], ap[i]))
+            print(f"{names[c]:>20}{seen:>12.3f}{nt[c]:>12.3f}{p[i]:>12.3f}{r[i]:>12.3f}{ap50[i]:>12.3f}{ap[i]:>12.3f}")
 
     # Print speeds
-    t = tuple(x / seen * 1E3 for x in (t0, t1, t0 + t1)) + (image_size, image_size, batch_size)  # tuple
     if not training:
-        print('Speed: %.1f/%.1f/%.1f ms inference/NMS/total per %gx%g image at batch-size %g' % t)
+        print(
+            f"Speed: {inference_time / seen * 1000:.1f}/{nms_time / seen * 1000:.1f}/{(inference_time + nms_time) / seen * 1000:.1f} ms "
+            f"inference/NMS/total per {image_size}x{image_size} image at batch-size {batch_size}")
 
     # Save JSON
     if save_json and len(jdict):
-        f = 'detections_val2017_%s_results.json' % \
-            (weights.split("/")[-1].replace('.pth', '') if isinstance(weights, str) else '')  # filename
-        print('\nCOCO mAP with pycocotools... saving %s...' % f)
+        f = f"detections_val2017_{weights.split('/')[-1].replace('.pth', '')}_results.json"
+        print(f"\nCOCO mAP with pycocotools... saving {f}...")
         with open(f, 'w') as file:
             json.dump(jdict, file)
 
@@ -246,7 +245,7 @@ def evalution(data,
             from pycocotools.cocoeval import COCOeval
 
             imgIds = [int(Path(x).stem) for x in dataloader.dataset.img_files]
-            cocoGt = COCO(glob.glob('../coco/annotations/instances_val*.json')[0])  # initialize COCO ground truth api
+            cocoGt = COCO(glob.glob('data/coco2017/annotations/instances_val*.json')[0])
             cocoDt = cocoGt.loadRes(f)  # initialize COCO pred api
             cocoEval = COCOeval(cocoGt, cocoDt, 'bbox')
             cocoEval.params.imgIds = imgIds  # image IDs to evaluate
@@ -255,26 +254,26 @@ def evalution(data,
             cocoEval.summarize()
             map, map50 = cocoEval.stats[:2]  # update results (mAP@0.5:0.95, mAP@0.5)
         except Exception as e:
-            print('ERROR: pycocotools unable to run: %s' % e)
+            print(f"ERROR: pycocotools unable to run: {e}")
 
     # Return results
     model.float()  # for training
-    maps = np.zeros(int(data_dict["nc"])) + map
+    maps = np.zeros(int(data_dict["number_classes"])) + map
     for i, c in enumerate(ap_class):
         maps[c] = ap[i]
-    return (mp, mr, map50, map, *(loss.cpu() / len(dataloader)).tolist()), maps, t
+    return (mp, mr, map50, map, *(loss.cpu() / len(dataloader)).tolist()), maps
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='test.py')
-    parser.add_argument('--weights', nargs='+', type=str, default='yolov5-small.pt', help='model.pt path(s)')
+    parser.add_argument('--weights', nargs='+', type=str, default='yolov5-small.pth', help='model.pt path(s)')
     parser.add_argument('--data', type=str, default='data/coco.yaml', help='*.data path')
     parser.add_argument('--batch-size', type=int, default=32, help='size of each image batch')
     parser.add_argument('--image-size', type=int, default=640, help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.001, help='object confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.65, help='IOU threshold for NMS')
     parser.add_argument('--save-json', action='store_true', help='save a cocoapi-compatible JSON results file')
-    parser.add_argument('--task', default='val', help="'val', 'test', 'study'")
+    parser.add_argument('--task', default='test', help="'val', 'test'")
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--single-cls', action='store_true', help='treat as single-class dataset')
     parser.add_argument('--augment', action='store_true', help='augmented inference')
@@ -283,17 +282,16 @@ if __name__ == '__main__':
     parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
     args = parser.parse_args()
     args.save_json |= args.data.endswith('coco.yaml')
-    args.data = check_file(args.data)  # check file
 
     print(args)
 
-    evalution(args.data,
-              args.weights,
-              args.batch_size,
-              args.image_size,
-              args.conf_thres,
-              args.iou_thres,
-              args.save_json,
-              args.single_cls,
-              args.augment,
-              args.verbose)
+    evaluate(args.data,
+             args.weights,
+             args.batch_size,
+             args.image_size,
+             args.conf_thres,
+             args.iou_thres,
+             args.save_json,
+             args.single_cls,
+             args.augment,
+             args.verbose)
