@@ -38,7 +38,6 @@ vid_formats = ['.mov', '.avi', '.mp4', '.mpg', '.mpeg', '.m4v', '.wmv', '.mkv']
 
 
 def create_dataloader(dataroot, image_size, batch_size, hyper_parameters=None, augment=None, cache=None, rect=None):
-    print(dataroot)
     dataset = LoadImagesAndLabels(dataroot=dataroot,
                                   image_size=image_size,
                                   batch_size=batch_size,
