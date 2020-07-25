@@ -35,7 +35,7 @@ def is_parallel(model):
     return type(model) in (nn.parallel.DataParallel, nn.parallel.DistributedDataParallel)
 
 
-def select_device(device="", apex=False, batch_size=None):
+def select_device(device="", apex=True, batch_size=None):
     # device = "cpu" or "cuda:0"
     only_cpu = device.lower() == "cpu"
     if device and not only_cpu:  # if device requested other than "cpu"

@@ -26,7 +26,7 @@ import torch.utils.data
 
 from yolov4_pytorch.data import LoadImages
 from yolov4_pytorch.data import LoadStreams
-from yolov4_pytorch.data import check_img_size
+from yolov4_pytorch.data import check_image_size
 from yolov4_pytorch.model import apply_classifier
 from yolov4_pytorch.model import load_classifier
 from yolov4_pytorch.utils import attempt_load
@@ -53,7 +53,7 @@ def detect(save_img=False):
 
     # Load model
     model = attempt_load(weights, map_location=device)  # load FP32 model
-    imgsz = check_img_size(imgsz, s=model.stride.max())  # check img_size
+    imgsz = check_image_size(imgsz, s=model.stride.max())  # check img_size
     if half:
         model.half()  # to FP16
 
@@ -168,7 +168,7 @@ def detect(save_img=False):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', nargs='+', type=str, default='yolov5-small.pt', help='model.pt path(s)')
+    parser.add_argument('--weights', nargs='+', type=str, default='weights/yolov5-small.pth', help='model.pth path(s)')
     parser.add_argument('--source', type=str, default='data/examples', help='source')  # file/folder, 0 for webcam
     parser.add_argument('--output', type=str, default='outputs', help='output folder')  # output folder
     parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')

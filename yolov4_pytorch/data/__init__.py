@@ -12,7 +12,7 @@
 # limitations under the License.
 # ==============================================================================
 from .adjust import exif_size
-from .common import check_img_size
+from .common import check_image_size
 from .common import create_folder
 from .common import cutout
 from .common import random_affine
@@ -29,7 +29,7 @@ from .video import LoadWebcam
 
 __all__ = [
     "exif_size",
-    "check_img_size",
+    "check_image_size",
     "create_folder",
     "cutout",
     "random_affine",

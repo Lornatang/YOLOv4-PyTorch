@@ -23,7 +23,7 @@ import torch
 import yaml
 from tqdm import tqdm
 
-from yolov4_pytorch.data import check_img_size
+from yolov4_pytorch.data import check_image_size
 from yolov4_pytorch.data import create_dataloader
 from yolov4_pytorch.utils import ap_per_class
 from yolov4_pytorch.utils import attempt_load
@@ -66,7 +66,7 @@ def test(data,
         device = select_device(opt.device, batch_size=batch_size)
         merge, save_txt = opt.merge, opt.save_txt  # use Merge NMS, save *.txt labels
         if save_txt:
-            out = Path('inference/output')
+            out = Path('outputs')
             if os.path.exists(out):
                 shutil.rmtree(out)  # delete output folder
             os.makedirs(out)  # make new output folder
@@ -77,7 +77,7 @@ def test(data,
 
         # Load model
         model = attempt_load(weights, map_location=device)  # load FP32 model
-        imgsz = check_img_size(imgsz, s=model.stride.max())  # check img_size
+        imgsz = check_image_size(imgsz, s=model.stride.max())  # check img_size
 
         # Multi-GPU disabled, incompatible with .half() https://github.com/ultralytics/yolov5/issues/99
         # if device.type != 'cpu' and torch.cuda.device_count() > 1:
