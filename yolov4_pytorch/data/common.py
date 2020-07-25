@@ -23,28 +23,65 @@ import numpy as np
 from ..utils.common import make_divisible
 
 
-def check_image_size(image_size, s=32):
-    # Verify img_size is a multiple of stride s
-    new_size = make_divisible(image_size, int(s))  # ceil gs-multiple
+def check_image_size(image_size, stride=32):
+    """ Verify img_size is a multiple of stride s
+
+    Args:
+        image_size (int): Image length and width.
+        stride (int, optional): Divide multiples of the step size. (default: ``32``)
+
+    Returns:
+        Return a new image size.
+
+    """
+    new_size = make_divisible(image_size, int(stride))  # ceil gs-multiple
     if new_size != image_size:
-        print(f"WARNING: --image-size {image_size} must be multiple of max stride {s}, updating to {new_size}")
+        print(f"WARNING: --image-size {image_size} must be multiple of max stride {stride}, updating to {new_size}")
     return new_size
 
 
 def create_folder(path="./outputs"):
-    # Create folder
+    """ Create a new folder
+
+    Args:
+        path (str): Relative path of the folder.
+
+    """
+    #
     if os.path.exists(path):
         shutil.rmtree(path)  # delete output folder
     os.makedirs(path)  # make new output folder
 
 
-def random_affine(img, targets=(), degrees=10, translate=.1, scale=.1, shear=10, border=(0, 0)):
-    # torchvision.transforms.RandomAffine(degrees=(-10, 10), translate=(.1, .1), scale=(.9, 1.1), shear=(-10, 10))
-    # https://medium.com/uruvideo/dataset-augmentation-with-random-homographies-a8f4b44830d4
-    # targets = [cls, xyxy]
+def random_affine(image, targets=(), degrees=10, translate=.1, scale=.1, shear=10, border=(0, 0)):
+    """ Random affine transformation of the image keeping center invariant
+    
+    Args:
+        image (tensor): Picture in tensor format.
+        targets (tuple): Image label.
+        degrees (sequence or float or int): Range of degrees to select from.
+            If degrees is a number instead of sequence like (min, max), the range of degrees
+            will be (-degrees, +degrees). Set to 0 to deactivate rotations.
+        translate (float, optional): tuple of maximum absolute fraction for horizontal
+            and vertical translations. For example translate=.1, then horizontal shift
+            is randomly sampled in the range -img_width * .1 < dx < image_width * .1 and vertical shift is
+            randomly sampled in the range -img_height * .1 < dy < image_height * .1. Will not translate by default.
+        scale (float, optional): scaling factor interval, e.g .1, then scale is
+            randomly sampled from the range 0.9 <= scale <= 1.1. Will keep original scale by default.
+        shear (sequence or float or int, optional): Range of degrees to select from.
+            If shear is a number, a shear parallel to the x axis in the range (-shear, +shear)
+            will be apllied. Else if shear is a tuple or list of 2 values a shear parallel to the x axis in the
+            range (shear[0], shear[1]) will be applied. Else if shear is a tuple or list of 4 values,
+            a x-axis shear in (shear[0], shear[1]) and y-axis shear in (shear[2], shear[3]) will be applied.
+            Will not apply shear by default.
+        border (tuple, optional):  None.
 
-    height = img.shape[0] + border[0] * 2  # shape(h,w,c)
-    width = img.shape[1] + border[1] * 2
+    Returns:
+
+    """
+    # torchvision.transforms.RandomAffine(degrees=(-10, 10), translate=(.1, .1), scale=(.9, 1.1), shear=(-10, 10))
+    height = image.shape[0] + border[0] * 2  # shape(h,w,c)
+    width = image.shape[1] + border[1] * 2
 
     # Rotation and Scale
     R = np.eye(3)
@@ -52,12 +89,12 @@ def random_affine(img, targets=(), degrees=10, translate=.1, scale=.1, shear=10,
     # a += random.choice([-180, -90, 0, 90])  # add 90deg rotations to small rotations
     s = random.uniform(1 - scale, 1 + scale)
     # s = 2 ** random.uniform(-scale, scale)
-    R[:2] = cv2.getRotationMatrix2D(angle=a, center=(img.shape[1] / 2, img.shape[0] / 2), scale=s)
+    R[:2] = cv2.getRotationMatrix2D(angle=a, center=(image.shape[1] / 2, image.shape[0] / 2), scale=s)
 
     # Translation
     T = np.eye(3)
-    T[0, 2] = random.uniform(-translate, translate) * img.shape[1] + border[1]  # x translation (pixels)
-    T[1, 2] = random.uniform(-translate, translate) * img.shape[0] + border[0]  # y translation (pixels)
+    T[0, 2] = random.uniform(-translate, translate) * image.shape[1] + border[1]  # x translation (pixels)
+    T[1, 2] = random.uniform(-translate, translate) * image.shape[0] + border[0]  # y translation (pixels)
 
     # Shear
     S = np.eye(3)
@@ -67,7 +104,7 @@ def random_affine(img, targets=(), degrees=10, translate=.1, scale=.1, shear=10,
     # Combined rotation matrix
     M = S @ T @ R  # ORDER IS IMPORTANT HERE!!
     if (border[0] != 0) or (border[1] != 0) or (M != np.eye(3)).any():  # image changed
-        img = cv2.warpAffine(img, M[:2], dsize=(width, height), flags=cv2.INTER_LINEAR, borderValue=(114, 114, 114))
+        image = cv2.warpAffine(image, M[:2], dsize=(width, height), flags=cv2.INTER_LINEAR, borderValue=(114, 114, 114))
 
     # Transform label coordinates
     n = len(targets)
@@ -82,15 +119,6 @@ def random_affine(img, targets=(), degrees=10, translate=.1, scale=.1, shear=10,
         y = xy[:, [1, 3, 5, 7]]
         xy = np.concatenate((x.min(1), y.min(1), x.max(1), y.max(1))).reshape(4, n).T
 
-        # # apply angle-based reduction of bounding boxes
-        # radians = a * math.pi / 180
-        # reduction = max(abs(math.sin(radians)), abs(math.cos(radians))) ** 0.5
-        # x = (xy[:, 2] + xy[:, 0]) / 2
-        # y = (xy[:, 3] + xy[:, 1]) / 2
-        # w = (xy[:, 2] - xy[:, 0]) * reduction
-        # h = (xy[:, 3] - xy[:, 1]) * reduction
-        # xy = np.concatenate((x - w / 2, y - h / 2, x + w / 2, y + h / 2)).reshape(4, n).T
-
         # reject warped points outside of image
         xy[:, [0, 2]] = xy[:, [0, 2]].clip(0, width)
         xy[:, [1, 3]] = xy[:, [1, 3]].clip(0, height)
@@ -104,4 +132,4 @@ def random_affine(img, targets=(), degrees=10, translate=.1, scale=.1, shear=10,
         targets = targets[i]
         targets[:, 1:5] = xy[i]
 
-    return img, targets
+    return image, targets

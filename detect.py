@@ -53,7 +53,7 @@ def detect(save_img=False):
 
     # Load model
     model = attempt_load(weights, map_location=device)  # load FP32 model
-    imgsz = check_image_size(imgsz, s=model.stride.max())  # check img_size
+    imgsz = check_image_size(imgsz, stride=model.stride.max())  # check img_size
     if half:
         model.half()  # to FP16
 

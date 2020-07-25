@@ -20,7 +20,15 @@ for orientation in ExifTags.TAGS.keys():
 
 
 def exif_size(image):
-    # Returns exif-corrected PIL size
+    """ Returns exif-corrected PIL size.
+
+    Args:
+        image (PngImageFile): Image matrix data.
+
+    Returns:
+        Size after image processing (width, height).
+
+    """
     s = image.size  # (width, height)
     try:
         rotation = dict(image._getexif().items())[orientation]
