@@ -40,7 +40,6 @@ from yolov4_pytorch.utils import check_anchors
 from yolov4_pytorch.utils import check_file
 from yolov4_pytorch.utils import compute_loss
 from yolov4_pytorch.utils import fitness
-from yolov4_pytorch.utils import get_latest_run
 from yolov4_pytorch.utils import increment_dir
 from yolov4_pytorch.utils import init_seeds
 from yolov4_pytorch.utils import labels_to_class_weights
@@ -383,7 +382,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch-size', type=int, default=16, help="Total batch size for all gpus.")
     parser.add_argument('--img-size', type=int, default=640, help='train,test sizes')
     parser.add_argument('--rect', action='store_true', help='rectangular training')
-    parser.add_argument('--resume', type=str, action='store_true',
+    parser.add_argument('--resume', action='store_true',
                         help='resume from weights/checkpoint.pth, or most recent run if blank.')
     parser.add_argument('--nosave', action='store_true', help='only save final checkpoint')
     parser.add_argument('--notest', action='store_true', help='only test final epoch')

@@ -42,7 +42,7 @@ from yolov4_pytorch.utils import xywh2xyxy
 from yolov4_pytorch.utils import xyxy2xywh
 
 
-def test(data,
+def test(data_dict,
          weights=None,
          batch_size=16,
          imgsz=640,
@@ -66,14 +66,9 @@ def test(data,
         device = select_device(opt.device, batch_size=batch_size)
         merge, save_txt = opt.merge, opt.save_txt  # use Merge NMS, save *.txt labels
         if save_txt:
-            out = Path('outputs')
-            if os.path.exists(out):
-                shutil.rmtree(out)  # delete output folder
-            os.makedirs(out)  # make new output folder
-
-        # Remove previous
-        for f in glob.glob(str(Path(save_dir) / 'test_batch*.jpg')):
-            os.remove(f)
+            if os.path.exists('outputs'):
+                shutil.rmtree('outputs')  # delete output folder
+            os.makedirs('outputs')  # make new output folder
 
         # Load model
         model = attempt_load(weights, map_location=device)  # load FP32 model
@@ -90,9 +85,12 @@ def test(data,
 
     # Configure
     model.eval()
-    with open(data) as f:
-        data = yaml.load(f, Loader=yaml.FullLoader)  # model dict
-    nc = 1 if single_cls else int(data['nc'])  # number of classes
+
+    with open(data_dict) as f:
+        data_dict = yaml.load(f, Loader=yaml.FullLoader)  # model dict
+
+    number_classes, names = (1, ['item']) if opt.single_cls else (int(data_dict['nc']), data_dict['names'])
+
     iouv = torch.linspace(0.5, 0.95, 10).to(device)  # iou vector for mAP@0.5:0.95
     niou = iouv.numel()
 
@@ -100,7 +98,7 @@ def test(data,
     if not training:
         img = torch.zeros((1, 3, imgsz, imgsz), device=device)  # init img
         _ = model(img.half() if half else img) if device.type != 'cpu' else None  # run once
-        path = data['test'] if opt.task == 'test' else data['val']  # path to val/test images
+        path = data_dict['test'] if opt.task == 'test' else data_dict['val']  # path to val/test images
         dataloader = create_dataloader(path, imgsz, batch_size, model.stride.max(), opt,
                                        hyp=None, augment=False, cache=False, pad=0.5, rect=True)[0]
 
@@ -150,7 +148,7 @@ def test(data,
             # Append to text file
             if save_txt:
                 gn = torch.tensor(shapes[si][0])[[1, 0, 1, 0]]  # normalization gain whwh
-                txt_path = str(out / Path(paths[si]).stem)
+                txt_path = os.path.join("output", Path(paths[si]).stem)
                 pred[:, :4] = scale_coords(img[si].shape[1:], pred[:, :4], shapes[si][0], shapes[si][1])  # to original
                 for *xyxy, conf, cls in pred:
                     xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
@@ -205,20 +203,13 @@ def test(data,
             # Append statistics (correct, conf, pcls, tcls)
             stats.append((correct.cpu(), pred[:, 4].cpu(), pred[:, 5].cpu(), tcls))
 
-        # Plot images
-        if batch_i < 1:
-            f = Path(save_dir) / ('test_batch%g_gt.jpg' % batch_i)  # filename
-            plot_images(img, targets, paths, str(f), names)  # ground truth
-            f = Path(save_dir) / ('test_batch%g_pred.jpg' % batch_i)
-            plot_images(img, output_to_target(output, width, height), paths, str(f), names)  # predictions
-
     # Compute statistics
     stats = [np.concatenate(x, 0) for x in zip(*stats)]  # to numpy
     if len(stats) and stats[0].any():
         p, r, ap, f1, ap_class = ap_per_class(*stats)
         p, r, ap50, ap = p[:, 0], r[:, 0], ap[:, 0], ap.mean(1)  # [P, R, AP@0.5, AP@0.5:0.95]
         mp, mr, map50, map = p.mean(), r.mean(), ap50.mean(), ap.mean()
-        nt = np.bincount(stats[3].astype(np.int64), minlength=nc)  # number of targets per class
+        nt = np.bincount(stats[3].astype(np.int64), minlength=number_classes)  # number of targets per class
     else:
         nt = torch.zeros(1)
 
@@ -227,7 +218,7 @@ def test(data,
     print(pf % ('all', seen, nt.sum(), mp, mr, map50, map))
 
     # Print results per class
-    if verbose and nc > 1 and len(stats):
+    if verbose and number_classes > 1 and len(stats):
         for i, c in enumerate(ap_class):
             print(pf % (names[c], seen, nt[c], p[i], r[i], ap50[i], ap[i]))
 
@@ -262,7 +253,7 @@ def test(data,
 
     # Return results
     model.float()  # for training
-    maps = np.zeros(nc) + map
+    maps = np.zeros(number_classes) + map
     for i, c in enumerate(ap_class):
         maps[c] = ap[i]
     return (mp, mr, map50, map, *(loss.cpu() / len(dataloader)).tolist()), maps, t
