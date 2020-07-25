@@ -1,21 +1,24 @@
 # --------------------- If use pip -----------------------------
 Cython
-numpy
-opencv-python
+numpy~=1.18.5
+opencv-python~=4.3.0.36
 torch
-torchvision
+torchvision~=0.6.1
 onnx
-matplotlib
-PyYAML
+matplotlib~=3.2.2
+PyYAML~=5.3.1
 scipy
-tqdm
+tqdm~=4.47.0
 tensorboard
-pillow
+pillow~=7.2.0
 thop
 scikit-image
 git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI
-pycocotools
-
+pycocotools~=2.0.1
+pathlib~=1.0.1
+yaml~=0.2.5
+setuptools~=49.2.0
+apex~=0.1
 
 # -------------------------------------------------------------- #
 #                          optional                              #
@@ -35,3 +38,4 @@ pycocotools
 # conda install -yc spyder-ide spyder-line-profiler
 # conda install -yc pytorch pytorch torchvision
 # conda install -yc conda-forge protobuf numpy && pip install onnx==1.6.0  # https://github.com/onnx/onnx#linux-and-macos
+
