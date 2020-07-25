@@ -75,11 +75,11 @@ def train():
     train_path = data_dict["train"]
     val_path = data_dict["val"]
 
-    number_classes, names = int(data_dict["nc"]), data_dict["names"]
+    number_classes, names = int(data_dict["number_classes"]), data_dict["names"]
     assert len(names) == number_classes, f"{len(names)} names found for nc={number_classes} dataset in {args.data}"
 
     # Create model
-    model = YOLO(args.config_file, nc=number_classes).to(device)
+    model = YOLO(args.config_file, number_classes=number_classes).to(device)
 
     # Image sizes
     image_size = check_image_size(args.image_size, 32)
@@ -176,7 +176,7 @@ def train():
 
     # Model parameters
     hyper_parameters["cls"] *= number_classes / 80.  # scale coco-tuned hyper_parameters["cls"] to current dataset
-    model.nc = number_classes  # attach number of classes to model
+    model.number_classes = number_classes  # attach number of classes to model
     model.hyper_parameters = hyper_parameters  # attach hyper parameters to model
 
     # Exponential moving average

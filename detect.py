@@ -72,7 +72,7 @@ def detect(save_img=False):
         dataset = LoadStreams(source, img_size=imgsz)
     else:
         save_img = True
-        dataset = LoadImages(source, img_size=imgsz)
+        dataset = LoadImages(source, image_size=imgsz)
 
     # Get names and colors
     names = model.module.names if hasattr(model, 'module') else model.names

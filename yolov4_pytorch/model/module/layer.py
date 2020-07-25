@@ -81,7 +81,7 @@ class Detect(nn.Module):
 
 
 class YOLO(nn.Module):
-    def __init__(self, config_file='yolov5-small.yaml', ch=3, nc=None):  # model, input channels, number of classes
+    def __init__(self, config_file='yolov5-small.yaml', channels=3, number_classes=None):
         super(YOLO, self).__init__()
         if isinstance(config_file, dict):
             self.yaml = config_file  # model dict
@@ -92,17 +92,17 @@ class YOLO(nn.Module):
                 self.yaml = yaml.load(f, Loader=yaml.FullLoader)  # model dict
 
         # Define model
-        if nc and nc != self.yaml['nc']:
-            print('Overriding %s nc=%g with nc=%g' % (config_file, self.yaml['nc'], nc))
-            self.yaml['nc'] = nc  # override yaml value
-        self.model, self.save = parse_model(deepcopy(self.yaml), ch=[ch])  # model, savelist, ch_out
+        if number_classes and number_classes != self.yaml['number_classes']:
+            print('Overriding %s nc=%g with nc=%g' % (config_file, self.yaml['number_classes'], number_classes))
+            self.yaml['number_classes'] = number_classes  # override yaml value
+        self.model, self.save = parse_model(deepcopy(self.yaml), ch=[channels])  # model, savelist, ch_out
         # print([x.shape for x in self.forward(torch.zeros(1, ch, 64, 64))])
 
         # Build strides, anchors
         m = self.model[-1]  # Detect()
         if isinstance(m, Detect):
             s = 128  # 2x min stride
-            m.stride = torch.tensor([s / x.shape[-2] for x in self.forward(torch.zeros(1, ch, s, s))])  # forward
+            m.stride = torch.tensor([s / x.shape[-2] for x in self.forward(torch.zeros(1, channels, s, s))])  # forward
             m.anchors /= m.stride.view(-1, 1, 1)
             check_anchor_order(m)
             self.stride = m.stride
@@ -193,9 +193,9 @@ class YOLO(nn.Module):
 
 def parse_model(d, ch):  # model_dict, input_channels(3)
     print('\n%3s%18s%3s%10s  %-40s%-30s' % ('', 'from', 'n', 'params', 'module', 'arguments'))
-    anchors, nc, gd, gw = d['anchors'], d['nc'], d['depth_multiple'], d['width_multiple']
+    anchors, number_classes, gd, gw = d['anchors'], d['number_classes'], d['depth_multiple'], d['width_multiple']
     na = (len(anchors[0]) // 2) if isinstance(anchors, list) else anchors  # number of anchors
-    no = na * (nc + 5)  # number of outputs = anchors * (classes + 5)
+    no = na * (number_classes + 5)  # number of outputs = anchors * (classes + 5)
 
     layers, save, c2 = [], [], ch[-1]  # layers, savelist, ch out
     for i, (f, n, m, args) in enumerate(d['backbone'] + d['head']):  # from, number, module, args

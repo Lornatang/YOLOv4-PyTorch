@@ -2,7 +2,7 @@ train: data/coco2017/train.txt
 val: data/coco2017/val.txt
 test: data/coco2017/test.txt
 
-nc: 80
+number_classes: 80
 
 names: ["person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
         "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
