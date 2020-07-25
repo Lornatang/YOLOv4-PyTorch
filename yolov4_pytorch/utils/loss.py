@@ -188,7 +188,7 @@ def compute_loss(p, targets, model):  # predictions, targets, model
             lbox += (1.0 - giou).sum() if red == 'sum' else (1.0 - giou).mean()  # giou loss
 
             # Obj
-            tobj[b, a, gj, gi] = (1.0 - model.gr) + model.gr * giou.detach().clamp(0).type(tobj.dtype)  # giou ratio
+            tobj[b, a, gj, gi] = (1.0 - 1.0) + 1.0 * giou.detach().clamp(0).type(tobj.dtype)  # giou ratio
 
             # Class
             if model.nc > 1:  # cls loss (only if multiple classes)

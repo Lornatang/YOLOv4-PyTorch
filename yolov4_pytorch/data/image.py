@@ -29,7 +29,6 @@ from .adjust import exif_size
 from .common import create_folder
 from .common import random_affine
 from .pad_resize import letterbox
-from ..utils.common import torch_distributed_zero_first
 from ..utils.coords import xywh2xyxy
 from ..utils.coords import xyxy2xywh
 
@@ -38,29 +37,23 @@ img_formats = [".bmp", ".jpg", ".jpeg", ".png", ".tif", ".dng"]
 vid_formats = ['.mov', '.avi', '.mp4', '.mpg', '.mpeg', '.m4v', '.wmv', '.mkv']
 
 
-def create_dataloader(path, imgsz, batch_size, stride, opt, hyp=None, augment=False, cache=False, pad=0.0, rect=False,
-                      local_rank=-1, world_size=1):
+def create_dataloader(dataroot, image_size, batch_size, hyper_parameters=None, augment=None, cache=None, rect=None):
     # Make sure only the first process in DDP process the dataset first, and the following others can use the cache.
-    with torch_distributed_zero_first(local_rank):
-        dataset = LoadImagesAndLabels(path, imgsz, batch_size,
-                                      augment=augment,  # augment images
-                                      hyp=hyp,  # augmentation hyperparameters
-                                      rect=rect,  # rectangular training
-                                      cache_images=cache,
-                                      single_cls=opt.single_cls,
-                                      stride=int(stride),
-                                      pad=pad)
+    dataset = LoadImagesAndLabels(dataroot, image_size, batch_size,
+                                  augment=augment,  # augment images
+                                  hyp=hyper_parameters,  # augmentation hyper parameters
+                                  rect=rect,  # rectangular training
+                                  cache_images=cache,
+                                  stride=32)
 
-    batch_size = min(batch_size, len(dataset))
-    nw = min([os.cpu_count() // world_size, batch_size if batch_size > 1 else 0, 8])  # number of workers
-    train_sampler = torch.utils.data.distributed.DistributedSampler(dataset) if local_rank != -1 else None
+    train_sampler = torch.utils.data.distributed.DistributedSampler(dataset)
     dataloader = torch.utils.data.DataLoader(dataset,
                                              batch_size=batch_size,
-                                             num_workers=nw,
+                                             num_workers=8,
                                              sampler=train_sampler,
                                              pin_memory=True,
                                              collate_fn=LoadImagesAndLabels.collate_fn)
-    return dataloader, dataset
+    return dataset, dataloader
 
 
 def get_hash(files):
@@ -151,7 +144,7 @@ class LoadImages:  # for inference
 
 class LoadImagesAndLabels(Dataset):  # for training/testing
     def __init__(self, path, img_size=640, batch_size=16, augment=False, hyp=None, rect=False, image_weights=False,
-                 cache_images=False, single_cls=False, stride=32, pad=0.0):
+                 cache_images=False, stride=32):
         try:
             f = []  # image files
             for p in path if isinstance(path, list) else [path]:
@@ -226,7 +219,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                 elif mini > 1:
                     shapes[i] = [1, 1 / mini]
 
-            self.batch_shapes = np.ceil(np.array(shapes) * img_size / stride + pad).astype(np.int) * stride
+            self.batch_shapes = np.ceil(np.array(shapes) * img_size / stride).astype(np.int) * stride
 
         # Cache labels
         create_datasubset, extract_bounding_boxes, labels_loaded = False, False, False
@@ -240,8 +233,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                 assert (l[:, 1:] <= 1).all(), 'non-normalized or out of bounds coordinate labels: %s' % file
                 if np.unique(l, axis=0).shape[0] < l.shape[0]:  # duplicate rows
                     nd += 1  # print('WARNING: duplicate rows in %s' % self.label_files[i])  # duplicate rows
-                if single_cls:
-                    l[:, 0] = 0  # force dataset into single-class mode
+
                 self.labels[i] = l
                 nf += 1  # file found
 

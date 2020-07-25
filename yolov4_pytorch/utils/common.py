@@ -17,6 +17,7 @@ import os
 from contextlib import contextmanager
 from pathlib import Path
 
+import torch.distributed
 import numpy as np
 import torch
 import yaml
@@ -100,11 +101,11 @@ def check_anchor_order(m):
         m.anchor_grid[:] = m.anchor_grid.flip(0)
 
 
-def check_anchors(dataset, model, thr=4.0, imgsz=640):
+def check_anchors(dataset, model, thr=4.0, image_size=640):
     # Check anchor fit to data, recompute if necessary
     print('\nAnalyzing anchors... ', end='')
     m = model.module.model[-1] if hasattr(model, 'module') else model.model[-1]  # Detect()
-    shapes = imgsz * dataset.shapes / dataset.shapes.max(1, keepdims=True)
+    shapes = image_size * dataset.shapes / dataset.shapes.max(1, keepdims=True)
     scale = np.random.uniform(0.9, 1.1, size=(shapes.shape[0], 1))  # augment scale
     wh = torch.tensor(np.concatenate([l[:, 3:5] * s for s, l in zip(shapes * scale, dataset.labels)])).float()  # wh
 
@@ -119,7 +120,7 @@ def check_anchors(dataset, model, thr=4.0, imgsz=640):
     if bpr < 0.99:  # threshold to recompute
         print('. Attempting to generate improved anchors, please wait...' % bpr)
         na = m.anchor_grid.numel() // 2  # number of anchors
-        new_anchors = kmean_anchors(dataset, n=na, img_size=imgsz, thr=thr, gen=1000, verbose=False)
+        new_anchors = kmean_anchors(dataset, n=na, img_size=image_size, thr=thr, gen=1000, verbose=False)
         new_bpr = metric(new_anchors.reshape(-1, 2))
         if new_bpr > bpr:  # replace anchors
             new_anchors = torch.tensor(new_anchors, device=m.anchors.device).type_as(m.anchors)
@@ -222,7 +223,7 @@ def torch_distributed_zero_first(local_rank: int):
         torch.distributed.barrier()
 
 
-def kmean_anchors(path='./data/coco128.yaml', n=9, img_size=640, thr=4.0, gen=1000, verbose=True):
+def kmean_anchors(path='./data/coco.yaml', n=9, img_size=640, thr=4.0, gen=1000, verbose=True):
     """ Creates kmeans-evolved anchors from training dataset
 
         Arguments:
