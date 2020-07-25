@@ -47,11 +47,11 @@ def create_dataloader(dataroot, image_size, batch_size, hyper_parameters=None, a
                                   cache_images=cache,
                                   stride=32)
 
-    train_sampler = torch.utils.data.distributed.DistributedSampler(dataset)
+    sampler = torch.utils.data.distributed.DistributedSampler(dataset)
     dataloader = torch.utils.data.DataLoader(dataset,
                                              batch_size=batch_size,
                                              num_workers=8,
-                                             sampler=train_sampler,
+                                             sampler=sampler,
                                              pin_memory=True,
                                              collate_fn=LoadImagesAndLabels.collate_fn)
     return dataset, dataloader

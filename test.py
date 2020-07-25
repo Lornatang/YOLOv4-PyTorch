@@ -24,7 +24,7 @@ import torch.utils.data
 import yaml
 from tqdm import tqdm
 
-from yolov4_pytorch.data import LoadImagesAndLabels
+from yolov4_pytorch.data import create_dataloader
 from yolov4_pytorch.model import YOLO
 from yolov4_pytorch.utils import ap_per_class
 from yolov4_pytorch.utils import box_iou
@@ -39,22 +39,19 @@ from yolov4_pytorch.utils import xywh2xyxy
 from yolov4_pytorch.utils import xyxy2xywh
 
 
-def evaluate(data,
+def evaluate(config_file="configs/COCO-Detection/yolov5-small.yaml",
              batch_size=16,
+             data="data/coco.yaml",
              image_size=640,
+             weights=None,
+             confidence_thresholds=0.001,
+             iou_thresholds=0.6,
              save_json=False,
+             merge=False,
+             verbose=False,
+             save_txt=False,
              model=None,
              dataloader=None):
-    # Configure
-    config_file = args.config_file
-    weights = args.weights
-    confidence_thresholds = args.confidence_thresholds
-    iou_thresholds = args.iou_thresholds
-    merge = args.merge
-    verbose = args.verbose
-    save_txt = args.save_txt
-    device = select_device(args.device, batch_size=args.batch_size)
-
     with open(data) as f:
         data_dict = yaml.load(f, Loader=yaml.FullLoader)
     number_classes, names = int(data_dict["number_classes"]), data_dict["names"]
@@ -66,6 +63,7 @@ def evaluate(data,
         device = next(model.parameters()).device  # get model device
 
     else:  # called directly
+        device = select_device(args.device, batch_size=args.batch_size)
         if save_txt:
             if os.path.exists('outputs'):
                 shutil.rmtree('outputs')  # delete output folder
@@ -94,15 +92,13 @@ def evaluate(data,
         _ = model(image.half() if half else image) if device.type != 'cpu' else None  # run once
         dataroot = data_dict['test'] if data_dict['test'] else data_dict['val']  # path to val/test images
 
-        dataset = LoadImagesAndLabels(dataroot=dataroot,
-                                      image_size=image_size,
-                                      batch_size=batch_size,
-                                      rect=True)
-        dataloader = torch.utils.data.DataLoader(dataset=dataset,
-                                                 batch_size=batch_size,
-                                                 num_workers=8,
-                                                 pin_memory=True,
-                                                 collate_fn=dataset.collate_fn)
+        dataset, dataloader = create_dataloader(dataroot=dataroot,
+                                                image_size=image_size,
+                                                batch_size=batch_size,
+                                                hyper_parameters=None,
+                                                augment=False,
+                                                cache=False,
+                                                rect=True)
 
     seen = 0
     coco91class = coco80_to_coco91_class()
@@ -267,12 +263,12 @@ def evaluate(data,
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='test.py')
-    parser.add_argument("--batch-size", type=int, default=32,
-                        help="mini-batch size (default: 32), this is the total "
-                             "batch size of all GPUs on the current node when "
-                             "using Data Parallel or Distributed Data Parallel")
     parser.add_argument("--config-file", type=str, default="configs/COCO-Detection/yolov5-small.yaml",
                         help="Neural network profile path. (default: `configs/COCO-Detection/yolov5-small.yaml`)")
+    parser.add_argument("--batch-size", type=int, default=16,
+                        help="mini-batch size (default: 16), this is the total "
+                             "batch size of all GPUs on the current node when "
+                             "using Data Parallel or Distributed Data Parallel")
     parser.add_argument("--data", type=str, default="data/coco2017.yaml",
                         help="Path to dataset. (default: data/coco2017.yaml)")
     parser.add_argument("--image-size", type=int, default=640,
@@ -295,7 +291,14 @@ if __name__ == '__main__':
 
     print(args)
 
-    evaluate(data=args.data,
+    evaluate(config_file=args.config_file,
              batch_size=args.batch_size,
+             data=args.data,
              image_size=args.image_size,
-             save_json=args.save_json)
+             weights=args.weights,
+             confidence_thresholds=args.confidence_thresholds,
+             iou_thresholds=args.iou_thresholds,
+             save_json=args.save_json,
+             merge=args.merge,
+             verbose=args.verbose,
+             save_txt=args.save_txt)

@@ -242,7 +242,7 @@ def train():
 
             # Print
             mean_losses = (mean_losses * i + loss_items) / (i + 1)  # update mean losses
-            progress_bar.set_description(f"{epoch:>6}/{(epochs - 1):>1}{torch.cuda.memory_cached() / 1E9:>9.3f}G"
+            progress_bar.set_description(f"{epoch:>6}/{(epochs - 1):>1}{torch.cuda.memory_cached() / 1E9:>9.1f}G"
                                          f"{mean_losses[0]:>10.4f}{mean_losses[1]:>10.4f}"
                                          f"{mean_losses[2]:>10.4f}{mean_losses[3]:>10.4f}"
                                          f"{targets.shape[0]:>10}{images.shape[-1]:>10}")
@@ -252,8 +252,9 @@ def train():
 
         ema.update_attr(model)
         final_epoch = epoch + 1 == epochs
-        results, maps = evaluate(data=data,
+        results, maps = evaluate(config_file=config_file,
                                  batch_size=batch_size,
+                                 data=data,
                                  image_size=image_size,
                                  save_json=final_epoch and args.data[-9:] == "coco.yaml",
                                  model=ema.ema.module if hasattr(ema.ema, "module") else ema.ema,
