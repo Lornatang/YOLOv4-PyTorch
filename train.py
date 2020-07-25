@@ -243,8 +243,7 @@ def train():
 
             # Print
             mean_losses = (mean_losses * i + loss_items) / (i + 1)  # update mean losses
-            memory = f"{torch.cuda.memory_cached() / 1E9:.3f}"
-            progress_bar.set_description(f"{epoch:>6}/{(epochs - 1):>1}{memory:>9}G"
+            progress_bar.set_description(f"{epoch:>6}/{(epochs - 1):>1}{torch.cuda.memory_cached() / 1E9:>9.3f}G"
                                          f"{mean_losses[0]:>10.4f}{mean_losses[1]:>10.4f}"
                                          f"{mean_losses[2]:>10.4f}{mean_losses[3]:>10.4f}"
                                          f"{targets.shape[0]:>10}{images.shape[-1]:>10}")
@@ -269,24 +268,19 @@ def train():
             tb_writer.add_scalar(tag, x, epoch)
 
         # Update best mAP
-        fitness_i = fitness(np.array(results).reshape(1, -1))  # fitness_i = weighted combination of [P, R, mAP, F1]
+        fitness_i = fitness(np.array(results).reshape(1, -1))
         if fitness_i > best_fitness:
             best_fitness = fitness_i
 
         # Save model
-        checkpoint = {"epoch": epoch,
-                      "best_fitness": best_fitness,
-                      "state_dict": ema.ema.module.state_dict() if hasattr(ema, "module") else ema.ema.state_dict(),
-                      "optimizer": optimizer.state_dict()}
-
-        # Save last, best and delete
-        torch.save(checkpoint, "weights/checkpoint.pth")
+        torch.save({"epoch": epoch,
+                    "best_fitness": best_fitness,
+                    "state_dict": ema.ema.module.state_dict() if hasattr(ema, "module") else ema.ema.state_dict(),
+                    "optimizer": optimizer.state_dict()}, "weights/checkpoint.pth")
         if (best_fitness == fitness_i) and not final_epoch:
-            checkpoint = {"epoch": -1,
-                          "state_dict": ema.ema.module.state_dict() if hasattr(ema, "module") else ema.ema.state_dict(),
-                          "optimizer": None}
-            torch.save(checkpoint, "weights/model_best.pth")
-        del checkpoint
+            torch.save({"epoch": -1,
+                        "state_dict": ema.ema.module.state_dict() if hasattr(ema, "module") else ema.ema.state_dict(),
+                        "optimizer": None}, "weights/model_best.pth")
 
     # Finish
     print(f"{epoch - start_epoch} epochs completed in {(time.time() - start_time) / 3600:.3f} hours.\n")
@@ -297,7 +291,8 @@ def train():
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(usage="\n\tpython train.py --config-file configs/COCO-Detection/yolov5-small.yaml "
+                                           "--data data/coco2017.yaml")
     parser.add_argument("--epochs", type=int, default=300,
                         help="500500 is YOLOv4 max batches. (default: 300)")
     parser.add_argument("--batch-size", type=int, default=16,
@@ -307,8 +302,8 @@ if __name__ == "__main__":
                              "Effective batch size is 64 // batch_size.")
     parser.add_argument("--config-file", type=str, default="configs/COCO-Detection/yolov5-small.yaml",
                         help="Neural network profile path. (default: `configs/COCO-Detection/yolov5-small.yaml`)")
-    parser.add_argument("--data", type=str, default="data/coco2014.yaml",
-                        help="Path to dataset. (default: data/coco2014.yaml)")
+    parser.add_argument("--data", type=str, default="data/coco2017.yaml",
+                        help="Path to dataset. (default: data/coco2017.yaml)")
     parser.add_argument("--image-size", type=int, default=640,
                         help="Size of processing picture. (default: 640)")
     parser.add_argument("--resume", action="store_true",
