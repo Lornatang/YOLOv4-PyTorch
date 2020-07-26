@@ -131,13 +131,16 @@ def evaluate(config_file="configs/COCO-Detection/yolov5-small.yaml",
 
             # Run NMS
             t = time_synchronized()
-            output = non_max_suppression(prediction=prediction,
-                                         confidence_thresholds=confidence_thresholds,
-                                         iou_thresholds=iou_thresholds, merge=merge)
+            prediction = non_max_suppression(prediction=prediction,
+                                             confidence_thresholds=confidence_thresholds,
+                                             iou_thresholds=iou_thresholds,
+                                             merge=merge,
+                                             classes=None,
+                                             agnostic=False)
             nms_time += time_synchronized() - t
 
         # Statistics per image
-        for si, pred in enumerate(output):
+        for si, pred in enumerate(prediction):
             labels = targets[targets[:, 0] == si, 1:]
             nl = len(labels)
             tcls = labels[:, 0].tolist() if nl else []  # target class
