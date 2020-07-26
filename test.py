@@ -265,7 +265,8 @@ def evaluate(config_file="configs/COCO-Detection/yolov5-small.yaml",
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(prog="test.py")
+    parser = argparse.ArgumentParser(usage="\n\tpython test.py --config-file configs/COCO-Detection/yolov5-small.yaml "
+                                           "--data data/coco2017.yaml --weights weights/yolov5-small.pth")
     parser.add_argument("--config-file", type=str, default="configs/COCO-Detection/yolov5-small.yaml",
                         help="Neural network profile path. (default: `configs/COCO-Detection/yolov5-small.yaml`)")
     parser.add_argument("--batch-size", type=int, default=32,

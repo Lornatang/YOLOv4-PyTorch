@@ -209,7 +209,8 @@ def detect():
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(usage="\n\tpython detect.py --config-file configs/COCO-Detection/yolov5-small.yaml"
+                                           " --data data/coco2017.yaml --weights weights/yolov5-small.pth")
     parser.add_argument("--config-file", type=str, default="configs/COCO-Detection/yolov5-small.yaml",
                         help="Neural network profile path. (default: `configs/COCO-Detection/yolov5-small.yaml`)")
     parser.add_argument("--data", type=str, default="data/coco2017.yaml",
