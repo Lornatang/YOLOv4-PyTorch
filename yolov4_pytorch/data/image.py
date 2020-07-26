@@ -431,7 +431,7 @@ def load_mosaic(self, index):
 
         # place img in img4
         if i == 0:  # top left
-            img4 = np.full((s * 2, s * 2, img.shape[2]), 114, dtype=np.uint8)  # base image with 4 tiles
+            image4 = np.full((s * 2, s * 2, img.shape[2]), 114, dtype=np.uint8)  # base image with 4 tiles
             x1a, y1a, x2a, y2a = max(xc - w, 0), max(yc - h, 0), xc, yc  # xmin, ymin, xmax, ymax (large image)
             x1b, y1b, x2b, y2b = w - (x2a - x1a), h - (y2a - y1a), w, h  # xmin, ymin, xmax, ymax (small image)
         elif i == 1:  # top right
@@ -444,7 +444,7 @@ def load_mosaic(self, index):
             x1a, y1a, x2a, y2a = xc, yc, min(xc + w, s * 2), min(s * 2, yc + h)
             x1b, y1b, x2b, y2b = 0, 0, min(w, x2a - x1a), min(y2a - y1a, h)
 
-        img4[y1a:y2a, x1a:x2a] = img[y1b:y2b, x1b:x2b]  # img4[ymin:ymax, xmin:xmax]
+        image4[y1a:y2a, x1a:x2a] = img[y1b:y2b, x1b:x2b]  # img4[ymin:ymax, xmin:xmax]
         padw = x1a - x1b
         padh = y1a - y1b
 
@@ -464,25 +464,37 @@ def load_mosaic(self, index):
         np.clip(labels4[:, 1:], 0, 2 * s, out=labels4[:, 1:])  # use with random_affine
 
     # Augment
-    img4, labels4 = random_affine(img4, labels4,
+    image4, labels4 = random_affine(image4, labels4,
                                   degrees=self.hyper_parameters['degrees'],
                                   translate=self.hyper_parameters['translate'],
                                   scale=self.hyper_parameters['scale'],
                                   shear=self.hyper_parameters['shear'],
                                   border=self.mosaic_border)  # border to remove
 
-    return img4, labels4
+    return image4, labels4
 
 
-def scale_image(image, ratio=1.0, same_shape=False):  # img(16,3,256,416), r=ratio
-    # scales img(bs,3,y,x) by ratio
-    h, w = image.shape[2:]
-    s = (int(h * ratio), int(w * ratio))  # new size
-    image = F.interpolate(image, size=s, mode='bilinear', align_corners=False)  # resize
-    if not same_shape:  # pad/crop img
-        gs = 32  # (pixels) grid size
-        h, w = [math.ceil(x * ratio / gs) * gs for x in (h, w)]
-    return F.pad(image, [0, w - s[1], 0, h - s[0]], value=0.447)  # value = imagenet mean
+def scale_image(image, ratio=1.0, same_shape=False):  # image(16,3,256,416), r=ratio
+    # scales image(bs,3,y,x) by ratio
+    if ratio == 1.0:
+        return image
+    else:
+        h, w = image.shape[2:]
+        s = (int(h * ratio), int(w * ratio))  # new size
+        image = F.interpolate(image, size=s, mode='bilinear', align_corners=False)  # resize
+        if not same_shape:  # pad/crop img
+            gs = 32  # (pixels) grid size
+            h, w = [math.ceil(x * ratio / gs) * gs for x in (h, w)]
+        return F.pad(image, [0, w - s[1], 0, h - s[0]], value=0.447)  # value = imagenet mean
+
+
+def copy_attr(a, b, include=(), exclude=()):
+    # Copy attributes from b to a, options to only include [...] and to exclude [...]
+    for k, v in b.__dict__.items():
+        if (len(include) and k not in include) or k.startswith('_') or k in exclude:
+            continue
+        else:
+            setattr(a, k, v)
 
 
 def augment_hsv(img, hgain=0.5, sgain=0.5, vgain=0.5):
