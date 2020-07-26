@@ -57,7 +57,7 @@ def apply_classifier(x, model, img, im0):
     return x
 
 
-def load_classifier(name='resnet101', n=2):
+def load_classifier(name='resnet101', number_classes=2):
     # Loads a pretrained model reshaped to n-class output
     model = models.__dict__[name](pretrained=True)
 
@@ -72,7 +72,7 @@ def load_classifier(name='resnet101', n=2):
 
     # Reshape output to n classes
     filters = model.fc.weight.shape[1]
-    model.fc.bias = nn.Parameter(torch.zeros(n), requires_grad=True)
-    model.fc.weight = nn.Parameter(torch.zeros(n, filters), requires_grad=True)
-    model.fc.out_features = n
+    model.fc.bias = nn.Parameter(torch.zeros(number_classes), requires_grad=True)
+    model.fc.weight = nn.Parameter(torch.zeros(number_classes, filters), requires_grad=True)
+    model.fc.out_features = number_classes
     return model

@@ -48,16 +48,15 @@ def attempt_load(weights, map_location=None):
         return model  # return ensemble
 
 
-def create_pretrained(f='weights/model_best.pth', s='weights/pretrained.pth'):
-    x = torch.load(f, map_location=torch.device('cpu'))
+def create_pretrained(source='weights/model_best.pth', target='weights/pretrained.pth'):
+    x = torch.load(source, map_location=torch.device('cpu'))
     x['optimizer'] = None
-    x['training_results'] = None
     x['epoch'] = -1
-    x['model'].half()  # to FP16
-    for p in x['model'].parameters():
+    x['state_dict'].half()  # to FP16
+    for p in x['state_dict'].parameters():
         p.requires_grad = True
-    torch.save(x, s)
-    print('%s saved as pretrained checkpoint %s, %.1fMB' % (f, s, os.path.getsize(s) / 1E6))
+    torch.save(x, target)
+    print(f"{source} saved as pretrained checkpoint {target}, {os.path.getsize(target) / 1E6:.1f}MB")
 
 
 def initialize_weights(model):
