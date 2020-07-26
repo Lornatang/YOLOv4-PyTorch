@@ -65,9 +65,9 @@ def evaluate(config_file="configs/COCO-Detection/yolov5-small.yaml",
     else:  # called directly
         device = select_device(args.device, batch_size=args.batch_size)
         if save_txt:
-            if os.path.exists('outputs'):
-                shutil.rmtree('outputs')  # delete output folder
-            os.makedirs('outputs')  # make new output folder
+            if os.path.exists("outputs"):
+                shutil.rmtree("outputs")  # delete output folder
+            os.makedirs("outputs")  # make new output folder
 
         # Create model
         model = YOLO(config_file=config_file, number_classes=number_classes).to(device)
@@ -76,7 +76,7 @@ def evaluate(config_file="configs/COCO-Detection/yolov5-small.yaml",
         model.load_state_dict(torch.load(weights)["state_dict"])
 
     # Half
-    half = device.type != 'cpu'  # half precision only supported on CUDA
+    half = device.type != "cpu"  # half precision only supported on CUDA
     if half:
         model.half()
 
@@ -89,8 +89,8 @@ def evaluate(config_file="configs/COCO-Detection/yolov5-small.yaml",
     # Dataloader
     if not training:
         image = torch.zeros((1, 3, image_size, image_size), device=device)  # init img
-        _ = model(image.half() if half else image) if device.type != 'cpu' else None  # run once
-        dataroot = data_dict['test'] if data_dict['test'] else data_dict['val']  # path to val/test images
+        _ = model(image.half() if half else image) if device.type != "cpu" else None  # run once
+        dataroot = data_dict["test"] if data_dict["test"] else data_dict["val"]  # path to val/test images
 
         dataset, dataloader = create_dataloader(dataroot=dataroot,
                                                 image_size=image_size,
@@ -152,8 +152,8 @@ def evaluate(config_file="configs/COCO-Detection/yolov5-small.yaml",
                                            shapes[si][1])  # to original
                 for *xyxy, conf, cls in pred:
                     xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
-                    with open(txt_path + '.txt', 'a') as f:
-                        f.write(('%g ' * 5 + '\n') % (cls, *xywh))  # label format
+                    with open(txt_path + ".txt", "a") as f:
+                        f.write(("%g " * 5 + "\n") % (cls, *xywh))  # label format
 
             # Clip boxes to image bounds
             clip_coords(pred, (height, width))
@@ -167,10 +167,10 @@ def evaluate(config_file="configs/COCO-Detection/yolov5-small.yaml",
                 box = xyxy2xywh(box)  # xywh
                 box[:, :2] -= box[:, 2:] / 2  # xy center to top-left corner
                 for p, b in zip(pred.tolist(), box.tolist()):
-                    jdict.append({'image_id': int(image_id) if image_id.isnumeric() else image_id,
-                                  'category_id': coco91class[int(p[5])],
-                                  'bbox': [round(x, 3) for x in b],
-                                  'score': round(p[4], 5)})
+                    jdict.append({"image_id": int(image_id) if image_id.isnumeric() else image_id,
+                                  "category_id": coco91class[int(p[5])],
+                                  "bbox": [round(x, 3) for x in b],
+                                  "score": round(p[4], 5)})
 
             # Assign all predictions as incorrect
             correct = torch.zeros(pred.shape[0], niou, dtype=torch.bool, device=device)
@@ -234,7 +234,7 @@ def evaluate(config_file="configs/COCO-Detection/yolov5-small.yaml",
     if save_json and len(jdict):
         f = f"detections_val2017_{weights.split('/')[-1].replace('.pth', '')}_results.json"
         print(f"\nCOCO mAP with pycocotools... saving {f}...")
-        with open(f, 'w') as file:
+        with open(f, "w") as file:
             json.dump(jdict, file)
 
         try:  # https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocoEvalDemo.ipynb
@@ -242,9 +242,9 @@ def evaluate(config_file="configs/COCO-Detection/yolov5-small.yaml",
             from pycocotools.cocoeval import COCOeval
 
             imgIds = [int(x.split("/")[-1][:-4]) for x in dataloader.dataset.image_files]
-            cocoGt = COCO(glob.glob('data/coco2017/annotations/instances_val*.json')[0])
+            cocoGt = COCO(glob.glob("data/coco2017/annotations/instances_val*.json")[0])
             cocoDt = cocoGt.loadRes(f)  # initialize COCO pred api
-            cocoEval = COCOeval(cocoGt, cocoDt, 'bbox')
+            cocoEval = COCOeval(cocoGt, cocoDt, "bbox")
             cocoEval.params.imgIds = imgIds  # image IDs to evaluate
             cocoEval.evaluate()
             cocoEval.accumulate()
@@ -261,8 +261,8 @@ def evaluate(config_file="configs/COCO-Detection/yolov5-small.yaml",
     return (mp, mr, map50, map, *(loss.cpu() / len(dataloader)).tolist()), maps
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(prog='test.py')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(prog="test.py")
     parser.add_argument("--config-file", type=str, default="configs/COCO-Detection/yolov5-small.yaml",
                         help="Neural network profile path. (default: `configs/COCO-Detection/yolov5-small.yaml`)")
     parser.add_argument("--batch-size", type=int, default=16,
@@ -281,13 +281,13 @@ if __name__ == '__main__':
                         help="IOU threshold for NMS. (default=0.65)")
     parser.add_argument("--save-json", action="store_true",
                         help="save a cocoapi-compatible JSON results file")
-    parser.add_argument('--merge', action='store_true', help='use Merge NMS')
-    parser.add_argument('--verbose', action='store_true', help='report mAP by class')
-    parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
+    parser.add_argument("--merge", action="store_true", help="use Merge NMS")
+    parser.add_argument("--verbose", action="store_true", help="report mAP by class")
+    parser.add_argument("--save-txt", action="store_true", help="save results to *.txt")
     parser.add_argument("--device", default="",
                         help="device id i.e. `0` or `0,1` or `cpu`. (default: ``).")
     args = parser.parse_args()
-    args.save_json |= args.data.endswith('coco.yaml')
+    args.save_json |= args.data.endswith("coco.yaml")
 
     print(args)
 
