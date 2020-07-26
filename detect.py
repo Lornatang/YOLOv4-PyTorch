@@ -172,7 +172,7 @@ def detect():
                             f.write(f"{classes_id} {xywh[0]} {xywh[1]} {xywh[2]} {xywh[3]}\n")
 
                     if save_image or view_image:  # Add bbox to image
-                        label = f"{names[int(classes_id)]} {confidence * 100:.2f}%"
+                        label = f"{names[int(classes_id)]} {int(confidence * 100)}%"
                         plot_one_box(xyxy=xyxy,
                                      image=raw_image,
                                      color=colors[int(classes_id)],
