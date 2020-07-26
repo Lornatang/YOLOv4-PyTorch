@@ -74,6 +74,9 @@ def evaluate(config_file="configs/COCO-Detection/yolov5-small.yaml",
 
         # Load model
         model.load_state_dict(torch.load(weights)["state_dict"])
+        model.float()
+        model.fuse()
+        model.eval()
 
     # Half
     half = device.type != "cpu"  # half precision only supported on CUDA

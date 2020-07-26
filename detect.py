@@ -30,7 +30,6 @@ from yolov4_pytorch.data import check_image_size
 from yolov4_pytorch.model import YOLO
 from yolov4_pytorch.model import apply_classifier
 from yolov4_pytorch.model import load_classifier
-from yolov4_pytorch.utils import create_pretrained
 from yolov4_pytorch.utils import non_max_suppression
 from yolov4_pytorch.utils import plot_one_box
 from yolov4_pytorch.utils import scale_coords
@@ -48,8 +47,9 @@ def detect(save_image=False):
     weights = args.weights
     view_image = args.view_image
     save_txt = args.save_txt
-    confidence_thresholds = args.confidence_thresholds,
-    iou_thresholds = args.iou_thresholds,
+    confidence_thresholds = args.confidence_thresholds
+    iou_thresholds = args.iou_thresholds
+    fourcc = args.fourcc
     classes = args.classes
     agnostic = args.agnostic_nms
     augment = args.augment
@@ -81,7 +81,7 @@ def detect(save_image=False):
     if half:
         model.half()  # to FP16
 
-        # Second-stage classifier
+    # Second-stage classifier
     classify = False
     if classify:
         # init model
@@ -191,7 +191,7 @@ def detect(save_image=False):
                         h = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
                         video_writer = cv2.VideoWriter(save_path,
                                                        cv2.VideoWriter_fourcc(
-                                                           *args.fourcc), fps,
+                                                           *fourcc), fps,
                                                        (w, h))
                     video_writer.write(raw_image)
 
@@ -212,6 +212,8 @@ if __name__ == '__main__':
                         help="Object confidence threshold. (default=0.4)")
     parser.add_argument("--iou-thresholds", type=float, default=0.5,
                         help="IOU threshold for NMS. (default=0.5)")
+    parser.add_argument("--fourcc", type=str, default="mp4v",
+                        help="output video codec (verify ffmpeg support). (default=mp4v)")
     parser.add_argument("--source", type=str, default="data/examples",
                         help="Image input source. (default: `data/examples`)")
     parser.add_argument("--output", type=str, default="outputs",
@@ -233,10 +235,4 @@ if __name__ == '__main__':
     print(args)
 
     with torch.no_grad():
-        if args.update:  # update all models (to fix SourceChangeWarning)
-            for args.weights.split("/")[-1] in ['yolov5-small.pth', 'yolov5-medium.pth', 'yolov5-large.pth',
-                                                'yolov5-xlarge.pth', 'yolov3-spp.pth']:
-                detect()
-                create_pretrained(args.weights, args.weights)
-        else:
-            detect()
+        detect()
