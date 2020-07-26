@@ -115,7 +115,7 @@ class YOLO(nn.Module):
 
     def forward(self, x, augment=False, profile=False):
         if augment:
-            img_size = x.shape[-2:]  # height, width
+            image_size = x.shape[-2:]  # height, width
             s = [0.83, 0.67]  # scales
             y = []
             for i, xi in enumerate((x,
@@ -125,7 +125,7 @@ class YOLO(nn.Module):
                 y.append(self.forward_once(xi)[0])
 
             y[1][..., :4] /= s[0]  # scale
-            y[1][..., 0] = img_size[1] - y[1][..., 0]  # flip lr
+            y[1][..., 0] = image_size[1] - y[1][..., 0]  # flip lr
             y[2][..., :4] /= s[1]  # scale
             return torch.cat(y, 1), None  # augmented inference, train
         else:

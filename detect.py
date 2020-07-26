@@ -49,7 +49,7 @@ def detect(save_image=False):
     confidence_thresholds = args.confidence_thresholds
     iou_thresholds = args.iou_thresholds
     classes = args.classes
-    agnostic = args.agnostic_nms
+    agnostic_nms = args.agnostic_nms
     augment = args.augment
 
     with open(data) as f:
@@ -85,7 +85,7 @@ def detect(save_image=False):
         # init model
         model_classifier = load_classifier(name="resnet101", number_classes=2)
         # load model
-        model_classifier.load_state_dict(torch.load("weights/resnet101.pth", map_location=device))
+        model_classifier.load_state_dict(torch.load("weights/resnet101.pth", map_location=device)["state_dict"])
         model_classifier.to(device)
         model_classifier.eval()
     else:
@@ -118,14 +118,14 @@ def detect(save_image=False):
         # Inference
         inference_time = time_synchronized()
         prediction = model(image, augment=augment)[0]
-        end_time = time_synchronized()
 
         # Apply NMS
         prediction = non_max_suppression(prediction=prediction,
                                          confidence_thresholds=confidence_thresholds,
                                          iou_thresholds=iou_thresholds,
                                          classes=classes,
-                                         agnostic=agnostic)
+                                         agnostic=agnostic_nms)
+        nms_time = time_synchronized()
 
         # Apply Classifier
         if classify:
@@ -134,13 +134,14 @@ def detect(save_image=False):
         # Process detections
         for i, detect in enumerate(prediction):  # detections per image
             if camera:  # batch_size >= 1
-                p, context, raw_image = image_path[i], f"{i:g}: ", raw_images[i]
+                p, context, raw_image = image_path[i], f"{i:g}: ", raw_images[i].copy()
             else:
                 p, context, raw_image = image_path, "", raw_images
 
             save_path = os.path.join(output, p.split("/")[-1])
             context += f"{image.shape[2]}*{image.shape[3]} "  # get image size
             if detect is not None and len(detect):
+                print(detect)
                 # Rescale boxes from img_size to im0 size
                 detect[:, :4] = scale_coords(image.shape[2:], detect[:, :4], raw_image.shape).round()
 
@@ -151,18 +152,18 @@ def detect(save_image=False):
                     context += f"{number} {names[int(classes)]}s, "
 
                 # Write results
-                for *xyxy, confidence, classes in detect:
+                for *xyxy, confidence, cls in detect:
                     if save_txt:  # Write to file
                         with open(save_path + ".txt", "a") as files:
-                            files.write(("%e " * 6 + "\n") % (*xyxy, classes, confidence))
+                            files.write(("%e " * 6 + "\n") % (*xyxy, cls, confidence))
 
                     if save_image or view_image:  # Add bbox to image
-                        label = f"{names[int(classes)]} {confidence * 100:.2f}%"
+                        label = f"{names[int(cls)]} {confidence * 100:.2f}%"
                         plot_one_box(xyxy=xyxy,
                                      image=raw_image,
-                                     color=colors[int(classes)],
+                                     color=colors[int(cls)],
                                      label=label,
-                                     line_thickness=None)
+                                     line_thickness=3)
 
             # Stream results
             if view_image:
@@ -171,7 +172,7 @@ def detect(save_image=False):
                     raise StopIteration
 
             # Print time (inference + NMS)
-            print(f"{context}Done. {end_time - inference_time:.3f}s")
+            print(f"{context}Done. {nms_time - inference_time:.3f}s")
 
             # Save results (image with detections)
             if save_image:
@@ -207,7 +208,7 @@ if __name__ == "__main__":
                         help="Object confidence threshold. (default=0.4)")
     parser.add_argument("--iou-thresholds", type=float, default=0.5,
                         help="IOU threshold for NMS. (default=0.5)")
-    parser.add_argument("--source", type=str, default="data/examples",
+    parser.add_argument("--source", type=str, default="data/examples/",
                         help="Image input source. (default: `data/examples`)")
     parser.add_argument("--output", type=str, default="outputs",
                         help="Output result folder. (default: `outputs`)")
