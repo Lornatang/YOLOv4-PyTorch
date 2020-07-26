@@ -1,15 +1,13 @@
 # YOLOv4-PyTorch
 
-<p align="center"><img src="assets/bus.jpg" width="640" alt=""></p>
-<p align="center"><img src="assets/giraffe.jpg" width="640" alt=""></p>
-<p align="center"><img src="assets/zidane.jpg" width="640" alt=""></p>
+<p align="center"><img src="assets/train.jpg" width="234" height="350" alt=""></p>
+<p align="center"><img src="assets/horse.jpg" width="416" height="416" alt=""></p>
+<p align="center"><img src="assets/city.jpg" width="350" height="284" alt=""></p>
 
 ### Overview
-The inspiration for this project comes from [ultralytics/yolov3](https://github.com/ultralytics/yolov3) && 
-[AlexeyAB/darknet](https://github.com/AlexeyAB/darknet) Thanks.
+The inspiration for this project comes from [ultralytics/yolov3](https://github.com/ultralytics/yolov3) && [AlexeyAB/darknet](https://github.com/AlexeyAB/darknet) Thanks.
 
-This project is a [YOLOv4](https://arxiv.org/abs/2004.10934) object detection system. Development framework 
-by [PyTorch](https://pytorch.org/).
+This project is a [YOLOv4](https://arxiv.org/abs/2004.10934) object detection system. Development framework by [PyTorch](https://pytorch.org/).
 
 The goal of this implementation is to be simple, highly extensible, and easy to integrate into your own projects. 
 This implementation is a work in progress -- new features are currently being implemented.  
@@ -33,14 +31,11 @@ This implementation is a work in progress -- new features are currently being im
 
 ### About YOLOv4
 There are a huge number of features which are said to improve Convolutional Neural Network (CNN) accuracy. 
-Practical testing of combinations of such features on large datasets, and theoretical justification of the result, 
-is required. Some features operate on certain models exclusively and for certain problems exclusively, 
-or only for small-scale datasets; while some features, such as batch-normalization and residual-connections, 
-are applicable to the majority of models, tasks, and datasets. We assume that such universal features 
-include Weighted-Residual-Connections (WRC), Cross-Stage-Partial-connections (CSP), Cross mini-Batch Normalization (CmBN), 
-Self-adversarial-training (SAT) and Mish-activation. We use new features: WRC, CSP, CmBN, SAT, Mish activation, 
-Mosaic data augmentation, CmBN, DropBlock regularization, and CIoU loss, and combine some of them to 
-achieve state-of-the-art results: 43.5% AP (65.7% AP50) for the MS COCO dataset at a realtime speed of ~65 FPS on Tesla V100. 
+Practical testing of combinations of such features on large datasets, and theoretical justification of the result, is required. 
+Some features operate on certain models exclusively and for certain problems exclusively, or only for small-scale datasets; 
+while some features, such as batch-normalization and residual-connections, are applicable to the majority of models, tasks, and datasets. 
+We assume that such universal features include Weighted-Residual-Connections (WRC), Cross-Stage-Partial-connections (CSP), Cross mini-Batch Normalization (CmBN), Self-adversarial-training (SAT) and Mish-activation. 
+We use new features: WRC, CSP, CmBN, SAT, Mish activation, Mosaic data augmentation, CmBN, DropBlock regularization, and CIoU loss, and combine some of them to achieve state-of-the-art results: 43.5% AP (65.7% AP50) for the MS COCO dataset at a realtime speed of ~65 FPS on Tesla V100. 
 Source code is at [this https URL](https://github.com/AlexeyAB/darknet).
 
 ### Installation
@@ -100,7 +95,7 @@ to begin training after downloading COCO data with `data/get_coco2014_dataset.sh
 Each epoch trains on 117,263 images from the train and validate COCO sets, and tests on 5000 images from the COCO validate set.
 
 **Resume Training:** `python train.py --config-file configs/COCO-Detection/yolov5-small.yaml  --data data/coco2014.yaml --resume` 
-to resume training from `weights/last.pth`.
+to resume training from `weights/checkpoint.pth`.
 
 #### Test
 All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 2080 SUPER GPUs & NVLink. 
@@ -401,7 +396,7 @@ The default settings are __not directly comparable__ with Detectron's standard s
 
 `detect.py` runs inference on any sources:
 ```bash
-python detect.py --cfg configs/COCO-Detection/yolov5-small.yaml  --data data/coco2014.yaml --weights weights/yolov5-small.pth  --source ...
+python detect.py --cfg configs/COCO-Detection/yolov5-small.yaml  --data data/coco2014.yaml --weights weights/COCO-Detection/yolov5-small.pth  --source ...
 ```
 
 - Image:  `--source file.jpg`
