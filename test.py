@@ -281,8 +281,8 @@ if __name__ == "__main__":
                         help="Path to dataset. (default: data/coco2017.yaml)")
     parser.add_argument("--image-size", type=int, default=640,
                         help="Size of processing picture. (default: 640)")
-    parser.add_argument("--weights", type=str, default="weights/yolov5-small.pth",
-                        help="Initial weights path. (default: `weights/yolov5-small.pth`)")
+    parser.add_argument("--weights", type=str, default="weights/COCO-Detection/yolov5-small.pth",
+                        help="Initial weights path. (default: `weights/COCO-Detection/yolov5-small.pth`)")
     parser.add_argument("--confidence-thresholds", type=float, default=0.001,
                         help="Object confidence threshold. (default=0.001)")
     parser.add_argument("--iou-thresholds", type=float, default=0.65,

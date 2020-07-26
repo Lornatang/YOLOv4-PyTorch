@@ -210,15 +210,16 @@ def detect():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(usage="\n\tpython detect.py --config-file configs/COCO-Detection/yolov5-small.yaml"
-                                           " --data data/coco2017.yaml --weights weights/yolov5-small.pth")
+                                           " --data data/coco2017.yaml"
+                                           " --weights weights/COCO-Detection/yolov5-small.pth")
     parser.add_argument("--config-file", type=str, default="configs/COCO-Detection/yolov5-small.yaml",
                         help="Neural network profile path. (default: `configs/COCO-Detection/yolov5-small.yaml`)")
     parser.add_argument("--data", type=str, default="data/coco2017.yaml",
                         help="Path to dataset. (default: data/coco2017.yaml)")
     parser.add_argument("--image-size", type=int, default=640,
                         help="Size of processing picture. (default: 640)")
-    parser.add_argument("--weights", type=str, default="weights/yolov5-small.pth",
-                        help="Initial weights path. (default: `weights/yolov5-small.pth`)")
+    parser.add_argument("--weights", type=str, default="weights/COCO-Detection/yolov5-small.pth",
+                        help="Initial weights path. (default: `weights/COCO-Detection/yolov5-small.pth`)")
     parser.add_argument("--confidence-thresholds", type=float, default=0.4,
                         help="Object confidence threshold. (default=0.4)")
     parser.add_argument("--iou-thresholds", type=float, default=0.5,
