@@ -250,11 +250,12 @@ def train():
 
         ema.update_attr(model)
         final_epoch = epoch + 1 == epochs
+        save_json = final_epoch and args.data[-9:] == "coco2014.yaml" or args.data[-9:] == "coco2017.yaml"
         results, maps = evaluate(config_file=config_file,
                                  batch_size=batch_size,
                                  data=data,
                                  image_size=image_size,
-                                 save_json=final_epoch and args.data[-9:] == "coco2017.yaml",
+                                 save_json=save_json,
                                  model=ema.ema.module if hasattr(ema.ema, "module") else ema.ema,
                                  dataloader=val_dataloader)
 
