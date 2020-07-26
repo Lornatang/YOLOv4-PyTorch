@@ -276,14 +276,14 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
             assert not augment, '%s. Can not train without labels.' % s
 
         # Cache images into memory for faster training (WARNING: large datasets may exceed system RAM)
-        self.imgs = [None] * n
+        self.images = [None] * n
         if cache_images:
             gb = 0  # Gigabytes of cached images
             pbar = tqdm(range(len(self.image_files)), desc='Caching images')
-            self.img_hw0, self.img_hw = [None] * n, [None] * n
+            self.image_hw0, self.image_hw = [None] * n, [None] * n
             for i in pbar:  # max 10k images
-                self.imgs[i], self.img_hw0[i], self.img_hw[i] = load_image(self, i)  # img, hw_original, hw_resized
-                gb += self.imgs[i].nbytes
+                self.images[i], self.image_hw0[i], self.image_hw[i] = load_image(self, i)  # img, hw_original, hw_resized
+                gb += self.images[i].nbytes
                 pbar.desc = 'Caching images (%.1fGB)' % (gb / 1E9)
 
     def cache_labels(self, path='labels.cache'):
@@ -415,7 +415,7 @@ def load_image(self, index):
             img = cv2.resize(img, (int(w0 * r), int(h0 * r)), interpolation=interp)
         return img, (h0, w0), img.shape[:2]  # img, hw_original, hw_resized
     else:
-        return self.images[index], self.img_hw0[index], self.img_hw[index]  # img, hw_original, hw_resized
+        return self.images[index], self.image_hw0[index], self.image_hw[index]  # img, hw_original, hw_resized
 
 
 def load_mosaic(self, index):
