@@ -13,16 +13,35 @@ from setuptools import find_packages, setup, Command
 
 # Package meta-data
 NAME = 'yolov4_pytorch'
-DESCRIPTION = 'An improved version of the AlexNet model, adding parameter initialization from ResNet.'
+DESCRIPTION = 'Pytorch implements yolov4.Good performance, easy to use, fast speed.'
 URL = 'https://github.com/Lornatang/YOLOv4-PyTorch'
 EMAIL = 'liuchangyu1111@gmail.com'
 AUTHOR = 'Liu Changyu'
-REQUIRES_PYTHON = '>=3.6.0'
+REQUIRES_PYTHON = '>=3.6.5'
 VERSION = '0.0.1'
 
 # What packages are required for this module to be executed?
 REQUIRED = [
-    'torch',
+    'Cython',
+    'numpy',
+    'opencv-python'
+    'torch'
+    'torchvision'
+    'onnx'
+    'matplotlib'
+    'PyYAML'
+    'scipy'
+    'tqdm'
+    'tensorboard'
+    'pillow'
+    'thop'
+    'scikit-image'
+    'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'
+    'pycocotools'
+    'pathlib'
+    'yaml'
+    'setuptools'
+    'apex'
 ]
 
 # What packages are optional?
@@ -124,6 +143,7 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
     ],
     # $ setup.py publish support.
     cmdclass={
