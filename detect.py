@@ -89,7 +89,11 @@ def detect():
         # load model
         model_classifier.load_state_dict(torch.load("weights/resnet101.pth", map_location=device)["state_dict"])
         model_classifier.to(device)
+        model_classifier.float()
+        model_classifier.fuse()
         model_classifier.eval()
+        if half:
+            model_classifier.half()  # to FP16
     else:
         model_classifier = None
 
@@ -155,7 +159,10 @@ def detect():
                 for category in detect[:, -1].unique():
                     # detections per class
                     number = (detect[:, -1] == category).sum()
-                    context += f"{number} {names[int(category)]}s, "
+                    if number > 1:
+                        context += f"{number} {names[int(category)]}s, "
+                    else:
+                        context += f"{number} {names[int(category)]}, "
 
                 # Write results
                 for *xyxy, confidence, classes_id in detect:
