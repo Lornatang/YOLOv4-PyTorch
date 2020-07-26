@@ -34,18 +34,20 @@ from yolov4_pytorch.utils import plot_one_box
 from yolov4_pytorch.utils import scale_coords
 from yolov4_pytorch.utils import select_device
 from yolov4_pytorch.utils import time_synchronized
+from yolov4_pytorch.utils import xyxy2xywh
 
 
-def detect(save_image=False):
-    # Configure (320, 192) or (416, 256) or (608, 352) for (height, width)
+def detect():
+    # Configure
+    # (320, 192) or (416, 256) or (608, 352) for (height, width)
     config_file = args.config_file
     data = args.data
-
     output = args.output
     source = args.source
     weights = args.weights
     view_image = args.view_image
     save_txt = args.save_txt
+    save_image = False
     confidence_thresholds = args.confidence_thresholds
     iou_thresholds = args.iou_thresholds
     classes = args.classes
@@ -108,7 +110,7 @@ def detect(save_image=False):
     start_time = time.time()
     image = torch.zeros((1, 3, image_size, image_size), device=device)  # init image
     _ = model(image.half() if half else image) if device.type != "cpu" else None  # run once
-    for image_path, image, raw_images, video_capture in dataset:
+    for filename, image, raw_images, video_capture in dataset:
         image = torch.from_numpy(image).to(device)
         image = image.half() if half else image.float()  # uint8 to fp16/32
         image /= 255.0  # 0 - 255 to 0.0 - 1.0
@@ -134,34 +136,39 @@ def detect(save_image=False):
         # Process detections
         for i, detect in enumerate(prediction):  # detections per image
             if camera:  # batch_size >= 1
-                p, context, raw_image = image_path[i], f"{i:g}: ", raw_images[i].copy()
+                p, context, raw_image = filename[i], f"{i:g}: ", raw_images[i].copy()
             else:
-                p, context, raw_image = image_path, "", raw_images
+                p, context, raw_image = filename, "", raw_images
 
             save_path = os.path.join(output, p.split("/")[-1])
+            txt_filename = f"_{dataset.frame if dataset.mode == 'video' else ''}"
+            txt_path = os.path.join(output, p.split("/")[-1][-4:] + txt_filename)
+
             context += f"{image.shape[2]}*{image.shape[3]} "  # get image size
+
+            gn = torch.tensor(raw_image.shape)[[1, 0, 1, 0]]  # normalization gain whwh
             if detect is not None and len(detect):
-                print(detect)
                 # Rescale boxes from img_size to im0 size
                 detect[:, :4] = scale_coords(image.shape[2:], detect[:, :4], raw_image.shape).round()
 
                 # Print results
-                for classes in detect[:, -1].unique():
+                for category in detect[:, -1].unique():
                     # detections per class
-                    number = (detect[:, -1] == classes).sum()
-                    context += f"{number} {names[int(classes)]}s, "
+                    number = (detect[:, -1] == category).sum()
+                    context += f"{number} {names[int(category)]}s, "
 
                 # Write results
-                for *xyxy, confidence, cls in detect:
+                for *xyxy, confidence, classes_id in detect:
                     if save_txt:  # Write to file
-                        with open(save_path + ".txt", "a") as files:
-                            files.write(("%e " * 6 + "\n") % (*xyxy, cls, confidence))
+                        xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
+                        with open(txt_path + ".txt", "a") as f:
+                            f.write(f"{classes_id} {xywh[0]} {xywh[1]} {xywh[2]} {xywh[3]}\n")
 
                     if save_image or view_image:  # Add bbox to image
-                        label = f"{names[int(cls)]} {confidence * 100:.2f}%"
+                        label = f"{names[int(classes_id)]} {confidence * 100:.2f}%"
                         plot_one_box(xyxy=xyxy,
                                      image=raw_image,
-                                     color=colors[int(cls)],
+                                     color=colors[int(classes_id)],
                                      label=label,
                                      line_thickness=3)
 
