@@ -48,6 +48,7 @@ def evaluate(config_file="configs/COCO-Detection/yolov5-small.yaml",
              iou_thresholds=0.6,
              save_json=False,
              merge=False,
+             augment=False,
              verbose=False,
              save_txt=False,
              model=None,
@@ -121,7 +122,7 @@ def evaluate(config_file="configs/COCO-Detection/yolov5-small.yaml",
         with torch.no_grad():
             # Run model
             t = time_synchronized()
-            prediction, outputs = model(image, augment=False)  # inference and training outputs
+            prediction, outputs = model(image, augment=augment)  # inference and training outputs
             inference_time += time_synchronized() - t
 
             # Compute loss
@@ -285,6 +286,8 @@ if __name__ == "__main__":
                         help="IOU threshold for NMS. (default=0.65)")
     parser.add_argument("--save-json", action="store_true",
                         help="save a cocoapi-compatible JSON results file")
+    parser.add_argument("--augment", action="store_true",
+                        help="augmented inference")
     parser.add_argument("--merge", action="store_true", help="use Merge NMS")
     parser.add_argument("--verbose", action="store_true", help="report mAP by class")
     parser.add_argument("--save-txt", action="store_true", help="save results to *.txt")
@@ -304,5 +307,6 @@ if __name__ == "__main__":
              iou_thresholds=args.iou_thresholds,
              save_json=args.save_json,
              merge=args.merge,
+             augment=args.augment,
              verbose=args.verbose,
              save_txt=args.save_txt)
