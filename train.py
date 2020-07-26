@@ -254,7 +254,7 @@ def train():
                                  batch_size=batch_size,
                                  data=data,
                                  image_size=image_size,
-                                 save_json=final_epoch and args.data[-9:] == "coco.yaml",
+                                 save_json=final_epoch and args.data[-9:] == "coco2017.yaml",
                                  model=ema.ema.module if hasattr(ema.ema, "module") else ema.ema,
                                  dataloader=val_dataloader)
 

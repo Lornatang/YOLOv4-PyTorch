@@ -41,7 +41,7 @@ from yolov4_pytorch.utils import xyxy2xywh
 
 def evaluate(config_file="configs/COCO-Detection/yolov5-small.yaml",
              batch_size=16,
-             data="data/coco.yaml",
+             data="data/coco2017.yaml",
              image_size=640,
              weights=None,
              confidence_thresholds=0.001,
@@ -290,7 +290,7 @@ if __name__ == "__main__":
     parser.add_argument("--device", default="",
                         help="device id i.e. `0` or `0,1` or `cpu`. (default: ``).")
     args = parser.parse_args()
-    args.save_json |= args.data.endswith("coco.yaml")
+    args.save_json |= args.data.endswith("coco2014.yaml") or args.data.endswith("coco2017.yaml")
 
     print(args)
 

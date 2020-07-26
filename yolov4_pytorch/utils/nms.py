@@ -65,7 +65,7 @@ def non_max_suppression(prediction, confidence_thresholds=0.1, iou_thresholds=0.
 
         # Filter by class
         if classes:
-            x = x[(x[:, 5:6] == torch.tensor(classes, device=x.device)).any(1)]
+            x = x[(x[:, 5:6] == torch.as_tensor(classes, device=x.device)).any(1)]
 
         # If none remain process next image
         n = x.shape[0]  # number of boxes

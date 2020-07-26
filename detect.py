@@ -16,7 +16,6 @@ import os
 import random
 import shutil
 import time
-from pathlib import Path
 
 import cv2
 import torch
@@ -49,7 +48,6 @@ def detect(save_image=False):
     save_txt = args.save_txt
     confidence_thresholds = args.confidence_thresholds
     iou_thresholds = args.iou_thresholds
-    fourcc = args.fourcc
     classes = args.classes
     agnostic = args.agnostic_nms
     augment = args.augment
@@ -67,7 +65,7 @@ def detect(save_image=False):
     if os.path.exists(output):
         shutil.rmtree(output)  # delete output folder
     os.makedirs(output)  # make new output folder
-    half = device.type != 'cpu'  # half precision only supported on CUDA
+    half = device.type != "cpu"  # half precision only supported on CUDA
 
     # Create model
     model = YOLO(config_file=config_file, number_classes=number_classes).to(device)
@@ -108,9 +106,8 @@ def detect(save_image=False):
 
     # Run inference
     start_time = time.time()
-    # run once
     image = torch.zeros((1, 3, image_size, image_size), device=device)  # init image
-    _ = model(image.half() if half else image) if device.type != 'cpu' else None  # run once
+    _ = model(image.half() if half else image) if device.type != "cpu" else None  # run once
     for image_path, image, raw_images, video_capture in dataset:
         image = torch.from_numpy(image).to(device)
         image = image.half() if half else image.float()  # uint8 to fp16/32
@@ -141,7 +138,7 @@ def detect(save_image=False):
             else:
                 p, context, raw_image = image_path, "", raw_images
 
-            save_path = str(Path(output) / Path(p).name)
+            save_path = os.path.join(output, p.split("/")[-1])
             context += f"{image.shape[2]}*{image.shape[3]} "  # get image size
             if detect is not None and len(detect):
                 # Rescale boxes from img_size to im0 size
@@ -186,19 +183,17 @@ def detect(save_image=False):
                         if isinstance(video_writer, cv2.VideoWriter):
                             video_writer.release()  # release previous video writer
 
+                        fourcc = "mp4v"  # output video codec
                         fps = video_capture.get(cv2.CAP_PROP_FPS)
                         w = int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
                         h = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                        video_writer = cv2.VideoWriter(save_path,
-                                                       cv2.VideoWriter_fourcc(
-                                                           *fourcc), fps,
-                                                       (w, h))
+                        video_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*fourcc), fps, (w, h))
                     video_writer.write(raw_image)
 
     print(f"Done. ({time.time() - start_time:.3f}s)")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config-file", type=str, default="configs/COCO-Detection/yolov5-small.yaml",
                         help="Neural network profile path. (default: `configs/COCO-Detection/yolov5-small.yaml`)")
@@ -212,8 +207,6 @@ if __name__ == '__main__':
                         help="Object confidence threshold. (default=0.4)")
     parser.add_argument("--iou-thresholds", type=float, default=0.5,
                         help="IOU threshold for NMS. (default=0.5)")
-    parser.add_argument("--fourcc", type=str, default="mp4v",
-                        help="output video codec (verify ffmpeg support). (default=mp4v)")
     parser.add_argument("--source", type=str, default="data/examples",
                         help="Image input source. (default: `data/examples`)")
     parser.add_argument("--output", type=str, default="outputs",
@@ -228,7 +221,7 @@ if __name__ == '__main__':
                         help="Class-agnostic NMS")
     parser.add_argument("--augment", action="store_true",
                         help="augmented inference")
-    parser.add_argument('--update', action='store_true', help='update all models')
+    parser.add_argument("--update", action="store_true", help="update all models")
     parser.add_argument("--device", default="",
                         help="device id i.e. `0` or `0,1` or `cpu`. (default: ``).")
     args = parser.parse_args()
