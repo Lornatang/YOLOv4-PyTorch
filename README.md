@@ -5,11 +5,14 @@
 <p align="center"><img src="assets/zidane.jpg" width="640" alt=""></p>
 
 ### Overview
-The inspiration for this project comes from [ultralytics/yolov3](https://github.com/ultralytics/yolov3) && [AlexeyAB/darknet](https://github.com/AlexeyAB/darknet) Thanks.
+The inspiration for this project comes from [ultralytics/yolov3](https://github.com/ultralytics/yolov3) && 
+[AlexeyAB/darknet](https://github.com/AlexeyAB/darknet) Thanks.
 
-This project is a [YOLOv4](https://arxiv.org/abs/2004.10934) object detection system. Development framework by [PyTorch](https://pytorch.org/).
+This project is a [YOLOv4](https://arxiv.org/abs/2004.10934) object detection system. Development framework 
+by [PyTorch](https://pytorch.org/).
 
-The goal of this implementation is to be simple, highly extensible, and easy to integrate into your own projects. This implementation is a work in progress -- new features are currently being implemented.  
+The goal of this implementation is to be simple, highly extensible, and easy to integrate into your own projects. 
+This implementation is a work in progress -- new features are currently being implemented.  
 
 ### Table of contents
 1. [About YOLOv4](#about-yolov4)
@@ -29,7 +32,16 @@ The goal of this implementation is to be simple, highly extensible, and easy to 
 5. [Credit](#credit) 
 
 ### About YOLOv4
-There are a huge number of features which are said to improve Convolutional Neural Network (CNN) accuracy. Practical testing of combinations of such features on large datasets, and theoretical justification of the result, is required. Some features operate on certain models exclusively and for certain problems exclusively, or only for small-scale datasets; while some features, such as batch-normalization and residual-connections, are applicable to the majority of models, tasks, and datasets. We assume that such universal features include Weighted-Residual-Connections (WRC), Cross-Stage-Partial-connections (CSP), Cross mini-Batch Normalization (CmBN), Self-adversarial-training (SAT) and Mish-activation. We use new features: WRC, CSP, CmBN, SAT, Mish activation, Mosaic data augmentation, CmBN, DropBlock regularization, and CIoU loss, and combine some of them to achieve state-of-the-art results: 43.5% AP (65.7% AP50) for the MS COCO dataset at a realtime speed of ~65 FPS on Tesla V100. Source code is at [this https URL](https://github.com/AlexeyAB/darknet).
+There are a huge number of features which are said to improve Convolutional Neural Network (CNN) accuracy. 
+Practical testing of combinations of such features on large datasets, and theoretical justification of the result, 
+is required. Some features operate on certain models exclusively and for certain problems exclusively, 
+or only for small-scale datasets; while some features, such as batch-normalization and residual-connections, 
+are applicable to the majority of models, tasks, and datasets. We assume that such universal features 
+include Weighted-Residual-Connections (WRC), Cross-Stage-Partial-connections (CSP), Cross mini-Batch Normalization (CmBN), 
+Self-adversarial-training (SAT) and Mish-activation. We use new features: WRC, CSP, CmBN, SAT, Mish activation, 
+Mosaic data augmentation, CmBN, DropBlock regularization, and CIoU loss, and combine some of them to 
+achieve state-of-the-art results: 43.5% AP (65.7% AP50) for the MS COCO dataset at a realtime speed of ~65 FPS on Tesla V100. 
+Source code is at [this https URL](https://github.com/AlexeyAB/darknet).
 
 ### Installation
 
@@ -67,43 +79,51 @@ bash get_coco2017_dataset.sh
 ### Usage
 
 #### Train
-```bash
-usage: train.py [-h] [--cfg CFG] [--data DATA] [--hyp HYP] [--epochs EPOCHS]
-                [--batch-size BATCH_SIZE] [--img-size IMG_SIZE [IMG_SIZE ...]]
-                [--rect] [--resume [RESUME]] [--nosave] [--notest]
-                [--noautoanchor] [--evolve] [--bucket BUCKET] [--cache-images]
-                [--weights WEIGHTS] [--name NAME] [--device DEVICE]
-                [--multi-scale] [--single-cls] [--sync-bn]
-                [--local_rank LOCAL_RANK]
-
-```
-
 - Example (COCO2017)
 
 To train on COCO2014/COCO2017 run: 
 ```bash
-python train.py --cfg configs/COCO-Detection/yolov5-small.yaml --data data/coco2017.yaml --weights ""
+python train.py --config-file configs/COCO-Detection/yolov5-small.yaml --data data/coco2017.yaml --weights ""
 ```
 
 - Example (VOC2007+2012)
 
 To train on VOC07+12 run:
 ```bash
-python train.py --cfg configs/PascalVOC-Detection/yolov5-small.yaml --data data/voc2007.yaml --weights ""
+python train.py --config-file configs/PascalVOC-Detection/yolov5-small.yaml --data data/voc2007.yaml --weights ""
 ```
 
 - Other training methods
 
-**Normal Training:** `python train.py --cfg configs/COCO-Detection/yolov5-small.yaml  --data data/coco2014.yaml --weights ""` to begin training after downloading COCO data with `data/get_coco2014_dataset.sh`. Each epoch trains on 117,263 images from the train and validate COCO sets, and tests on 5000 images from the COCO validate set.
+**Normal Training:** `python train.py --config-file configs/COCO-Detection/yolov5-small.yaml  --data data/coco2014.yaml --weights ""` 
+to begin training after downloading COCO data with `data/get_coco2014_dataset.sh`. 
+Each epoch trains on 117,263 images from the train and validate COCO sets, and tests on 5000 images from the COCO validate set.
 
-**Resume Training:** `python train.py --cfg configs/COCO-Detection/yolov5-small.yaml  --data data/coco2014.yaml --resume` to resume training from `weights/last.pth`.
+**Resume Training:** `python train.py --config-file configs/COCO-Detection/yolov5-small.yaml  --data data/coco2014.yaml --resume` 
+to resume training from `weights/last.pth`.
 
 #### Test
-All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 2080 SUPER GPUs & NVLink. The software in use were PyTorch 1.5.1, CUDA 10.2, cuDNN 7.6.5.
+All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 2080 SUPER GPUs & NVLink. 
+The software in use were PyTorch 1.5.1, CUDA 10.2, cuDNN 7.6.5.
+
+- Example (COCO2017)
+
+To train on COCO2014/COCO2017 run: 
+```bash
+python test.py --config-file configs/COCO-Detection/yolov5-small.yaml --data data/coco2017.yaml --weights weights/COCO-Detection/yolov5-small.pth
+```
+
+- Example (VOC2007+2012)
+
+To train on VOC07+12 run:
+```bash
+python test.py --config-file configs/PascalVOC-Detection/yolov5-small.yaml --data data/voc2007.yaml --weights weights/PascalVOC-Detection/yolov5-small.pth
+```
 
 ##### Common Settings for VOC Models
 * All VOC models were trained on `voc2007_trainval` + `voc2012_trainval` and evaluated on `voc2007_test`.
-* The default settings are __not directly comparable__ with YOLOv4's standard settings. The default settings are __not directly comparable__ with Detectron's standard settings.
+* The default settings are __not directly comparable__ with YOLOv4's standard settings. 
+The default settings are __not directly comparable__ with Detectron's standard settings.
   For example, our default training data augmentation uses scale jittering in addition to horizontal flipping.
 * For YOLOv3/YOLOv4, we provide baselines based on __2 different backbone combinations__:
   * __Darknet-53__: Use a ResNet+VGG backbone with standard conv and FC heads for mask and box prediction,
@@ -381,15 +401,7 @@ All numbers were obtained on local machine servers with 2 NVIDIA GeForce RTX 208
 
 `detect.py` runs inference on any sources:
 ```bash
-usage: detect.py [-h] [--weights WEIGHTS [WEIGHTS ...]] [--source SOURCE]
-                 [--output OUTPUT] [--img-size IMG_SIZE]
-                 [--conf-thres CONF_THRES] [--iou-thres IOU_THRES]
-                 [--device DEVICE] [--view-img] [--save-txt]
-                 [--classes CLASSES [CLASSES ...]] [--agnostic-nms]
-                 [--augment] [--update]
-
-example:
-  python detect.py --cfg configs/COCO-Detection/yolov5-small.yaml  --data data/coco2014.yaml --weights weights/yolov5-small.pth  --source ...
+python detect.py --cfg configs/COCO-Detection/yolov5-small.yaml  --data data/coco2014.yaml --weights weights/yolov5-small.pth  --source ...
 ```
 
 - Image:  `--source file.jpg`
@@ -424,7 +436,7 @@ In `data/custom/train.txt` and `data/custom/val.txt`, add paths to images that w
 To train on the custom dataset run:
 
 ```bash
-$ python train.py --cfg configs/yolov4-custom.yaml --data data/custom.yaml --epochs 100 
+python train.py --config-file configs/yolov3-custom.yaml --data data/custom.yaml --epochs 100 
 ```
 
 ### Credit
