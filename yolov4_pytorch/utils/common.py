@@ -14,7 +14,6 @@
 import glob
 import math
 import os
-from contextlib import contextmanager
 
 import numpy as np
 import torch
@@ -72,16 +71,6 @@ def ap_per_class(tp, conf, pred_cls, target_cls):
             # AP from recall-precision curve
             for j in range(tp.shape[1]):
                 ap[ci, j] = compute_ap(recall[:, j], precision[:, j])
-
-            # Plot
-            # fig, ax = plt.subplots(1, 1, figsize=(5, 5))
-            # ax.plot(recall, precision)
-            # ax.set_xlabel('Recall')
-            # ax.set_ylabel('Precision')
-            # ax.set_xlim(0, 1.01)
-            # ax.set_ylim(0, 1.01)
-            # fig.tight_layout()
-            # fig.savefig('PR_curve.png', dpi=300)
 
     # Compute F1 score (harmonic mean of precision and recall)
     f1 = 2 * p * r / (p + r + 1e-16)
@@ -187,18 +176,6 @@ def print_mutation(hyp, results, bucket=''):
         f.write(c + b + '\n')
     x = np.unique(np.loadtxt('evolve.txt', ndmin=2), axis=0)  # load unique rows
     np.savetxt('evolve.txt', x[np.argsort(-fitness(x))], '%10.3g')  # save sort by fitness
-
-
-@contextmanager
-def torch_distributed_zero_first(local_rank: int):
-    """
-    Decorator to make all processes in distributed training wait for each local_master to do something.
-    """
-    if local_rank not in [-1, 0]:
-        torch.distributed.barrier()
-    yield
-    if local_rank == 0:
-        torch.distributed.barrier()
 
 
 def kmean_anchors(path='./data/coco.yaml', n=9, img_size=640, thr=4.0, gen=1000, verbose=True):

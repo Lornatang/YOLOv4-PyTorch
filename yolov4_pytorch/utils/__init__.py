@@ -19,7 +19,6 @@ from .common import kmean_anchors
 from .common import make_divisible
 from .common import output_to_target
 from .common import print_mutation
-from .common import torch_distributed_zero_first
 from .coords import clip_coords
 from .coords import scale_coords
 from .coords import xywh2xyxy
@@ -62,7 +61,6 @@ __all__ = [
     "make_divisible",
     "output_to_target",
     "print_mutation",
-    "torch_distributed_zero_first",
     "clip_coords",
     "scale_coords",
     "xywh2xyxy",

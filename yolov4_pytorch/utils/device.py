@@ -15,24 +15,25 @@ import os
 import time
 
 import torch
-import torch.backends.cudnn as cudnn
-import torch.nn as nn
+import torch.backends.cudnn
+import torch.distributed
+import torch.nn
 
 
 def init_seeds(seed=0):
     torch.manual_seed(seed)
 
     if seed == 0:  # slower, more reproducible
-        cudnn.deterministic = True
-        cudnn.benchmark = False
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
     else:  # faster, less reproducible
-        cudnn.deterministic = False
-        cudnn.benchmark = True
+        torch.backends.cudnn.deterministic = False
+        torch.backends.cudnn.benchmark = True
 
 
 def is_parallel(model):
     # is model is parallel with DP or DDP
-    return type(model) in (nn.parallel.DataParallel, nn.parallel.DistributedDataParallel)
+    return type(model) in (torch.nn.parallel.DataParallel, torch.nn.parallel.DistributedDataParallel)
 
 
 def select_device(device="", apex=True, batch_size=None):
