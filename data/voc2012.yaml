@@ -1,0 +1,8 @@
+train: data/voc2012/train.txt
+val: data/voc2012/val.txt
+test: data/voc2012/test.txt
+
+number_classes: 20
+
+names: ["aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog",
+        "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"]
