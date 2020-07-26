@@ -198,8 +198,6 @@ def train():
         model.train()
 
         mean_losses = torch.zeros(4, device=device)
-        train_dataloader.sampler.set_epoch(epoch)
-
         print("\n")
         print(f"{'Epoch':>10}{'memory':>10}{'GIoU':>10}{'obj':>10}{'cls':>10}{'total':>10}{'targets':>10}"
               f"{' image size'}")
