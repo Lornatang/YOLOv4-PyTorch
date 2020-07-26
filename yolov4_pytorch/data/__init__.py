@@ -21,7 +21,7 @@ from .image import augment_hsv
 from .image import create_dataloader
 from .image import load_image
 from .image import load_mosaic
-from .image import scale_img
+from .image import scale_image
 from .pad_resize import letterbox
 from .video import LoadStreams
 from .video import LoadWebcam
@@ -37,7 +37,7 @@ __all__ = [
     "create_dataloader",
     "load_image",
     "load_mosaic",
-    "scale_img",
+    "scale_image",
     "letterbox",
     "LoadStreams",
     "LoadWebcam",

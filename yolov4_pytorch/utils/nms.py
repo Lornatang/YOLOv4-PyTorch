@@ -20,11 +20,12 @@ from .coords import xywh2xyxy
 from .iou import box_iou
 
 
-def non_max_suppression(prediction, confidence_thresholds=0.1, iou_thresholds=0.6, merge=False, classes=None, agnostic=False):
-    """Performs Non-Maximum Suppression (NMS) on inference results
+def non_max_suppression(prediction, confidence_thresholds=0.1, iou_thresholds=0.6, merge=False, classes=None,
+                        agnostic=False):
+    """ Performs Non-Maximum Suppression (NMS) on inference results
 
     Returns:
-         detections with shape: nx6 (x1, y1, x2, y2, conf, cls)
+         detections with shape: nx6 (x1, y1, x2, y2, confidence, classes)
     """
     if prediction.dtype is torch.float16:
         prediction = prediction.float()  # to FP32
@@ -42,8 +43,6 @@ def non_max_suppression(prediction, confidence_thresholds=0.1, iou_thresholds=0.
     t = time.time()
     output = [None] * prediction.shape[0]
     for xi, x in enumerate(prediction):  # image index, image inference
-        # Apply constraints
-        # x[((x[..., 2:4] < min_wh) | (x[..., 2:4] > max_wh)).any(1), 4] = 0  # width-height
         x = x[xc[xi]]  # confidence
 
         # If none remain process next image
@@ -68,17 +67,10 @@ def non_max_suppression(prediction, confidence_thresholds=0.1, iou_thresholds=0.
         if classes:
             x = x[(x[:, 5:6] == torch.tensor(classes, device=x.device)).any(1)]
 
-        # Apply finite constraint
-        # if not torch.isfinite(x).all():
-        #     x = x[torch.isfinite(x).all(1)]
-
         # If none remain process next image
         n = x.shape[0]  # number of boxes
         if not n:
             continue
-
-        # Sort by confidence
-        # x = x[x[:, 4].argsort(descending=True)]
 
         # Batched NMS
         c = x[:, 5:6] * (0 if agnostic else max_wh)  # classes
@@ -93,12 +85,12 @@ def non_max_suppression(prediction, confidence_thresholds=0.1, iou_thresholds=0.
                 x[i, :4] = torch.mm(weights, x[:, :4]).float() / weights.sum(1, keepdim=True)  # merged boxes
                 if redundant:
                     i = i[iou.sum(1) > 1]  # require redundancy
-            except:  # possible CUDA error https://github.com/ultralytics/yolov3/issues/1139
+            except:
                 print(x, i, x.shape, i.shape)
                 pass
 
         output[xi] = x[i]
         if (time.time() - t) > time_limit:
-            break  # time limit exceeded
+            break
 
     return output

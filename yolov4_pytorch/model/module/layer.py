@@ -33,7 +33,7 @@ from .neck import BottleneckCSP
 from .pooling import Maxpool
 from ..common import model_info
 from ..fuse import fuse_conv_and_bn
-from ...data.image import scale_img
+from ...data.image import scale_image
 from ...utils.common import make_divisible
 from ...utils.device import time_synchronized
 from ...utils.weights import initialize_weights
@@ -119,10 +119,9 @@ class YOLO(nn.Module):
             s = [0.83, 0.67]  # scales
             y = []
             for i, xi in enumerate((x,
-                                    scale_img(x.flip(3), s[0]),  # flip-lr and scale
-                                    scale_img(x, s[1]),  # scale
+                                    scale_image(x.flip(3), s[0]),  # flip-lr and scale
+                                    scale_image(x, s[1]),  # scale
                                     )):
-                # cv2.imwrite('img%g.jpg' % i, 255 * xi[0].numpy().transpose((1, 2, 0))[:, :, ::-1])
                 y.append(self.forward_once(xi)[0])
 
             y[1][..., :4] /= s[0]  # scale

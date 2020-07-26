@@ -77,7 +77,7 @@ class LoadImages:  # for inference
         videos = [x for x in files if os.path.splitext(x)[-1].lower() in vid_formats]
         ni, nv = len(images), len(videos)
 
-        self.img_size = image_size
+        self.image_size = image_size
         self.files = images + videos
         self.nf = ni + nv  # number of files
         self.video_flag = [False] * ni + [True] * nv
@@ -101,7 +101,7 @@ class LoadImages:  # for inference
         if self.video_flag[self.count]:
             # Read video
             self.mode = 'video'
-            ret_val, img0 = self.cap.read()
+            ret_val, raw_image = self.cap.read()
             if not ret_val:
                 self.count += 1
                 self.cap.release()
@@ -110,7 +110,7 @@ class LoadImages:  # for inference
                 else:
                     path = self.files[self.count]
                     self.new_video(path)
-                    ret_val, img0 = self.cap.read()
+                    ret_val, raw_image = self.cap.read()
 
             self.frame += 1
             print('video %g/%g (%g/%g) %s: ' % (self.count + 1, self.nf, self.frame, self.nframes, path), end='')
@@ -118,19 +118,19 @@ class LoadImages:  # for inference
         else:
             # Read image
             self.count += 1
-            img0 = cv2.imread(path)  # BGR
-            assert img0 is not None, 'Image Not Found ' + path
+            raw_image = cv2.imread(path)  # BGR
+            assert raw_image is not None, 'Image Not Found ' + path
             print('image %g/%g %s: ' % (self.count, self.nf, path), end='')
 
         # Padded resize
-        img = letterbox(img0, new_shape=self.img_size)[0]
+        image = letterbox(raw_image, new_shape=self.image_size)[0]
 
         # Convert
-        img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
-        img = np.ascontiguousarray(img)
+        image = image[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
+        image = np.ascontiguousarray(image)
 
         # cv2.imwrite(path + '.letterbox.jpg', 255 * img.transpose((1, 2, 0))[:, :, ::-1])  # save letterbox image
-        return path, img, img0, self.cap
+        return path, image, raw_image, self.cap
 
     def new_video(self, path):
         self.frame = 0
@@ -474,15 +474,15 @@ def load_mosaic(self, index):
     return img4, labels4
 
 
-def scale_img(img, ratio=1.0, same_shape=False):  # img(16,3,256,416), r=ratio
+def scale_image(image, ratio=1.0, same_shape=False):  # img(16,3,256,416), r=ratio
     # scales img(bs,3,y,x) by ratio
-    h, w = img.shape[2:]
+    h, w = image.shape[2:]
     s = (int(h * ratio), int(w * ratio))  # new size
-    img = F.interpolate(img, size=s, mode='bilinear', align_corners=False)  # resize
+    image = F.interpolate(image, size=s, mode='bilinear', align_corners=False)  # resize
     if not same_shape:  # pad/crop img
         gs = 32  # (pixels) grid size
         h, w = [math.ceil(x * ratio / gs) * gs for x in (h, w)]
-    return F.pad(img, [0, w - s[1], 0, h - s[0]], value=0.447)  # value = imagenet mean
+    return F.pad(image, [0, w - s[1], 0, h - s[0]], value=0.447)  # value = imagenet mean
 
 
 def augment_hsv(img, hgain=0.5, sgain=0.5, vgain=0.5):
