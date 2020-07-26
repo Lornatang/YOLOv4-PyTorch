@@ -265,8 +265,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="test.py")
     parser.add_argument("--config-file", type=str, default="configs/COCO-Detection/yolov5-small.yaml",
                         help="Neural network profile path. (default: `configs/COCO-Detection/yolov5-small.yaml`)")
-    parser.add_argument("--batch-size", type=int, default=16,
-                        help="mini-batch size (default: 16), this is the total "
+    parser.add_argument("--batch-size", type=int, default=32,
+                        help="mini-batch size (default: 32), this is the total "
                              "batch size of all GPUs on the current node when "
                              "using Data Parallel or Distributed Data Parallel")
     parser.add_argument("--data", type=str, default="data/coco2017.yaml",
