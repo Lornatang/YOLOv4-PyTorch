@@ -11,5 +11,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-from .visual import IMAGENET
+from .visual import YOLOv4
 from .visual import index

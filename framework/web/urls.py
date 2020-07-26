@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-from api import IMAGENET
+from api import YOLOv4
 from api import index
 from django.conf.urls import url
 from django.contrib import admin
@@ -20,7 +20,7 @@ from django.urls import path
 
 # noinspection PyInterpreter
 urlpatterns = [
-    url(r'^api/image.html', IMAGENET.as_view(), name="YOLOv3 for MobileNet v1"),
+    url(r'^api/image.html', YOLOv4.as_view(), name="YOLOv4 for MobileNet v1"),
     path('', index),
     path('admin/', admin.site.urls),
     url('index/', index, name="index"),

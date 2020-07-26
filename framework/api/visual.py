@@ -31,11 +31,12 @@ from yolov4_pytorch.utils import select_device
 device = select_device()
 
 # move the model to GPU for speed if available
-model = YOLO("../configs/PascalVOC-Detection/mobilenetv1.yaml").to(device)
+model = YOLO("../configs/COCO-Detection/mobilenetv1.yaml").to(device)
 # Load weight
 model.load_state_dict(
-    torch.load("../weights/PascalVOC-Detection/mobilenetv1.pth", map_location=device)["state_dict"])
+    torch.load("../weights/COCO-Detection/mobilenetv1.pth", map_location=device)["state_dict"])
 model.float()
+model.fuse()
 model.eval()
 
 # Half precision
@@ -44,7 +45,7 @@ if half:
     model.half()
 
 # Get names and colors
-with open("../data/voc2007.yaml") as data_file:
+with open("../data/coco2017.yaml") as data_file:
     data_dict = yaml.load(data_file, Loader=yaml.FullLoader)  # model dict
 names = data_dict["names"]
 colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(names))]
@@ -73,7 +74,7 @@ def index(request):
     return render(request, "index.html")
 
 
-class IMAGENET(APIView):
+class YOLOv4(APIView):
 
     @staticmethod
     def get(request):
@@ -118,9 +119,6 @@ class IMAGENET(APIView):
             Later versions will not contexturn an image's address,
             but instead a base64-bit encoded address
         """
-
-        context = None
-
         # Get the url for the image
         url = request.POST.get("url")
         base_path = "static/images"
@@ -138,9 +136,9 @@ class IMAGENET(APIView):
 
         dataset = preprocess(filename)
 
-        msg = ""
+        msg = None
 
-        for path, image, raw_images, video_cap in dataset:
+        for filename, image, raw_images, video_cap in dataset:
             image = torch.from_numpy(image).to(device)
             image = image.half() if half else image.float()  # uint8 to fp16/32
             image /= 255.0  # 0 - 255 to 0.0 - 1.0
@@ -148,32 +146,37 @@ class IMAGENET(APIView):
                 image = image.unsqueeze(0)
 
             # Inference
-            predict = model(image)[0]
-
-            # to float
-            if half:
-                predict = predict.float()
+            prediction = model(image, augment=False)[0]
 
             # Apply NMS
-            predict = non_max_suppression(predict, 0.4, 0.5)
+            prediction = non_max_suppression(prediction, 0.4, 0.5)
 
             # Process detections
-            for i, det in enumerate(predict):  # detections per image
-                p, raw_image = path, raw_images
+            for i, detect in enumerate(prediction):  # detections per image
+                p, raw_image = filename, raw_images
 
-                if det is not None and len(det):
-                    # Rescale boxes from img_size to raw_image size
-                    det[:, :4] = scale_coords(image.shape[2:], det[:, :4], raw_image.shape).round()
+                if detect is not None and len(detect):
+                    # Rescale boxes from img_size to im0 size
+                    detect[:, :4] = scale_coords(image.shape[2:], detect[:, :4], raw_image.shape).round()
 
                     # Print results
-                    for c in det[:, -1].unique():
-                        n = (det[:, -1] == c).sum()  # detections per class
-                        msg += f"{n} {names[int(c)]}s, "  # add to string
+                    for category in detect[:, -1].unique():
+                        # detections per class
+                        number = (detect[:, -1] == category).sum()
+                        if number > 1:
+                            msg += f"{number} {names[int(category)]}s, "
+                        else:
+                            msg += f"{number} {names[int(category)]}, "
 
                     # Write results
-                    for *xyxy, conf, cls in det:
-                        label = f"{names[int(cls)]} {int(conf * 100)}%"
-                        plot_one_box(xyxy, raw_image, label=label, color=colors[int(cls)], line_thickness=3)
+                    # Write results
+                    for *xyxy, confidence, classes_id in detect:
+                        label = f"{names[int(classes_id)]} {int(confidence * 100)}%"
+                        plot_one_box(xyxy=xyxy,
+                                     image=raw_image,
+                                     color=colors[int(classes_id)],
+                                     label=label,
+                                     line_thickness=3)
 
                 cv2.imwrite(os.path.join(base_path, "new.png"), raw_image)
 
