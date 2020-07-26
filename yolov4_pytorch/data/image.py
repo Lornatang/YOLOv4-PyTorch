@@ -403,7 +403,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
 
 def load_image(self, index):
     # loads 1 image from dataset, returns img, original hw, resized hw
-    img = self.imgs[index]
+    img = self.images[index]
     if img is None:  # not cached
         path = self.image_files[index]
         img = cv2.imread(path)  # BGR
@@ -415,7 +415,7 @@ def load_image(self, index):
             img = cv2.resize(img, (int(w0 * r), int(h0 * r)), interpolation=interp)
         return img, (h0, w0), img.shape[:2]  # img, hw_original, hw_resized
     else:
-        return self.imgs[index], self.img_hw0[index], self.img_hw[index]  # img, hw_original, hw_resized
+        return self.images[index], self.img_hw0[index], self.img_hw[index]  # img, hw_original, hw_resized
 
 
 def load_mosaic(self, index):
