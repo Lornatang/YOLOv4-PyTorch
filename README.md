@@ -145,7 +145,19 @@ The default settings are __not directly comparable__ with Detectron's standard s
 <th valign="bottom">download</th>
 <!-- TABLE BODY -->
 <!-- ROW: MobileNet-v1 -->
- <tr><td align="left"><a href="configs/COCO-Detection/mobilenetv1.yaml">MobileNet-v1</a></td>
+ <tr><td align="left"><a href="configs/PascalVOC-Detection/mobilenetv1.yaml">MobileNet-v1</a></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+</tr>
+<!-- ROW: VGG16 -->
+ <tr><td align="left"><a href="configs/PascalVOC-Detection/vgg16.yaml">VGG16</a></td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
@@ -157,7 +169,7 @@ The default settings are __not directly comparable__ with Detectron's standard s
 <td align="center">-</td>
 </tr>
 <!-- ROW: YOLOv3-Tiny -->
- <tr><td align="left"><a href="configs/COCO-Detection/yolov3-tiny.yaml">YOLOv3-Tiny</a></td>
+ <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov3-tiny.yaml">YOLOv3-Tiny</a></td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
@@ -286,6 +298,18 @@ The default settings are __not directly comparable__ with Detectron's standard s
 <!-- TABLE BODY -->
 <!-- ROW: MobileNet-v1 -->
  <tr><td align="left"><a href="configs/COCO-Detection/mobilenetv1.yaml">MobileNet-v1</a></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+</tr>
+<!-- ROW: VGG16 -->
+ <tr><td align="left"><a href="configs/COCO-Detection/vgg16.yaml">VGG16</a></td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
