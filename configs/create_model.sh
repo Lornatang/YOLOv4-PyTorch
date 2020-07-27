@@ -32,22 +32,19 @@ backbone:
 # YOLOv3 head
 head:
   [[-1, 3, Bottleneck, [1024, False]],  # 11
-   [-1, 1, nn.Conv2d, [number_anchors * (number_classes + 5), 1, 1]],  # 12 (P5/32-large)
 
-   [-3, 1, Conv, [256, 1, 1]],
+   [-1, 1, Conv, [256, 1, 1]],
    [-1, 1, nn.Upsample, [None, 2, \"nearest\"]],
    [[-1, 8], 1, Concat, [1]],  # concat backbone P4
    [-1, 1, Bottleneck, [512, False]],
-   [-1, 2, Bottleneck, [512, False]],
-   [-1, 1, nn.Conv2d, [number_anchors * (number_classes + 5), 1, 1]],  # 18 (P4/16-medium)
+   [-1, 2, Bottleneck, [512, False]],  # 16
 
-   [-3, 1, Conv, [128, 1, 1]],
+   [-1, 1, Conv, [128, 1, 1]],
    [-1, 1, nn.Upsample, [None, 2, \"nearest\"]],
    [[-1, 6], 1, Concat, [1]],  # concat backbone P3
    [-1, 1, Bottleneck, [256, False]],
-   [-1, 2, Bottleneck, [256, False]],
-   [-1, 1, nn.Conv2d, [number_anchors * (number_classes + 5), 1, 1]],  # 24 (P3/8-small)
+   [-1, 2, Bottleneck, [256, False]],  # 21
 
-   [[], 1, Detect, [number_classes, anchors]],   # Detect(P3, P4, P5)
+   [[21, 16, 11], 1, Detect, [number_classes, anchors]],   # Detect(P3, P4, P5)
   ]
 " >> yolov3-custom.yaml
