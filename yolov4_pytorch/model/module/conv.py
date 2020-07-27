@@ -85,7 +85,7 @@ class CrossConv(nn.Module):
         super(CrossConv, self).__init__()
         c_ = int(c2 * e)  # hidden channels
         self.cv1 = Conv(c1, c_, (1, k), (1, s))
-        self.cv2 = Conv(c_, c2, (k, 1), (s, 1), groups=g)
+        self.cv2 = Conv(c_, c2, (k, 1), (s, 1), g=g)
         self.add = shortcut and c1 == c2
 
     def forward(self, x):
@@ -94,7 +94,7 @@ class CrossConv(nn.Module):
 
 def DWConv(c1, c2, k=1, s=1, act=True):
     # Depthwise convolution
-    return Conv(c1, c2, k, s, groups=math.gcd(c1, c2), act=act)
+    return Conv(c1, c2, k, s, g=math.gcd(c1, c2), act=act)
 
 
 class MixConv2d(nn.Module):
