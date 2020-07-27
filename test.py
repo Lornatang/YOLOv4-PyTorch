@@ -92,9 +92,9 @@ def evaluate(config_file="configs/COCO-Detection/yolov5-small.yaml",
 
     # Dataloader
     if not training:
-        image = torch.zeros((1, 3, image_size, image_size), device=device)  # init img
+        image = torch.zeros((1, 3, image_size, image_size), device=device)  # init image
         _ = model(image.half() if half else image) if device.type != "cpu" else None  # run once
-        dataroot = data_dict["val"] if data_dict["test"] else data_dict["val"]  # path to val/test images
+        dataroot = data_dict["test"] if data_dict["test"] else data_dict["val"]  # path to val/test images
 
         dataset, dataloader = create_dataloader(dataroot=dataroot,
                                                 image_size=image_size,
