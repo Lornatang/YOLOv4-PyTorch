@@ -1,5 +1,5 @@
-train: data/coco128/images/train.txt  # 128 images
-val: data/coco128/images/val.txt  # 38 images
+train: data/coco128/train.txt  # 128 images
+val: data/coco128/val.txt  # 38 images
 
 number_classes: 80
 
