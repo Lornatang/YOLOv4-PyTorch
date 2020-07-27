@@ -147,7 +147,7 @@ data/masked.yaml
 
 data/safety_hat/
 data/safety_hat.yaml
-
+data/hand/
 data/voc2007/
 data/voc2012/
 data/voc2014/
