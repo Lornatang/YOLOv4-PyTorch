@@ -204,6 +204,18 @@ The default settings are __not directly comparable__ with Detectron's standard s
 <td align="center">-</td>
 <td align="center">-</td>
 </tr>
+<!-- ROW: YOLOv4-Tiny -->
+ <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov4-tiny.yaml">YOLOv4-Tiny</a></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+</tr>
 <!-- ROW: YOLOv4 -->
  <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov4.yaml">YOLOv4</a></td>
 <td align="center">-</td>
@@ -358,6 +370,18 @@ The default settings are __not directly comparable__ with Detectron's standard s
 </tr>
 <!-- ROW: YOLOv4 -->
  <tr><td align="left"><a href="configs/COCO-Detection/yolov4.yaml">YOLOv4</a></td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+<td align="center">-</td>
+</tr>
+<!-- ROW: YOLOv4-Tiny -->
+ <tr><td align="left"><a href="configs/COCO-Detection/yolov4-tiny.yaml">YOLOv4-Tiny</a></td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
