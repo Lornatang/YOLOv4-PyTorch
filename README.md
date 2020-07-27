@@ -115,7 +115,8 @@ To train on VOC07+12 run:
 python test.py --config-file configs/PascalVOC-Detection/yolov5-small.yaml --data data/voc2007.yaml --weights weights/PascalVOC-Detection/yolov5-small.pth
 ```
 
-##### Common Settings for VOC Models
+**Common Settings for VOC Models**
+
 * All VOC models were trained on `voc2007_trainval` + `voc2012_trainval` and evaluated on `voc2007_test`.
 * The default settings are __not directly comparable__ with YOLOv4's standard settings. 
 The default settings are __not directly comparable__ with Detectron's standard settings.
@@ -252,8 +253,8 @@ The default settings are __not directly comparable__ with Detectron's standard s
 <td align="center">-</td>
 </tr>
 </tbody></table>
+**Common Settings for COCO Models**
 
-##### Common Settings for COCO Models
 * All COCO models were trained on `train2017` and evaluated on `val2017`. 
 * The default settings are __not directly comparable__ with YOLOv4's standard settings. The default settings are __not directly comparable__ with Detectron's standard settings.
   For example, our default training data augmentation uses scale jittering in addition to horizontal flipping.
@@ -266,6 +267,7 @@ The default settings are __not directly comparable__ with Detectron's standard s
   * __GhostDarknet-53__ : Use a ResNet+Ghost backbone with standard conv and FC heads for mask and box prediction,
     respectively. 
     
+
 ##### COCO Object Detection Baselines
 
 <table><tbody>
