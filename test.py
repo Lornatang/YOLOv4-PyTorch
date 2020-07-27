@@ -94,7 +94,7 @@ def evaluate(config_file="configs/COCO-Detection/yolov5-small.yaml",
     if not training:
         image = torch.zeros((1, 3, image_size, image_size), device=device)  # init img
         _ = model(image.half() if half else image) if device.type != "cpu" else None  # run once
-        dataroot = data_dict["test"] if data_dict["test"] else data_dict["val"]  # path to val/test images
+        dataroot = data_dict["val"] if data_dict["test"] else data_dict["val"]  # path to val/test images
 
         dataset, dataloader = create_dataloader(dataroot=dataroot,
                                                 image_size=image_size,
@@ -269,8 +269,9 @@ def evaluate(config_file="configs/COCO-Detection/yolov5-small.yaml",
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(usage="\n\tpython test.py --config-file configs/COCO-Detection/yolov5-small.yaml "
-                                           "--data data/coco2017.yaml --weights weights/yolov5-small.pth")
+    parser = argparse.ArgumentParser(usage="\n\tpython test.py --config-file configs/COCO-Detection/yolov5-small.yaml"
+                                           " --data data/coco2017.yaml"
+                                           " --weights weights/COCO-Detection/yolov5-small.pth")
     parser.add_argument("--config-file", type=str, default="configs/COCO-Detection/yolov5-small.yaml",
                         help="Neural network profile path. (default: `configs/COCO-Detection/yolov5-small.yaml`)")
     parser.add_argument("--batch-size", type=int, default=32,
