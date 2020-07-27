@@ -79,7 +79,7 @@ def train():
     assert len(names) == number_classes, f"{len(names)} names found for nc={number_classes} dataset in {data}"
 
     # Create model
-    model = YOLO(config_file, number_classes=number_classes).to(device)
+    model = YOLO(config_file=config_file, number_classes=number_classes).to(device)
 
     # Optimizer
     accumulate = max(round(64 / batch_size), 1)  # accumulate loss before optimizing
