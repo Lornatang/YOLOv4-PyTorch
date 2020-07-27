@@ -1,0 +1,7 @@
+train: data/hand/train.txt
+val: data/hand/val.txt
+test: data/hand/test.txt
+
+number_classes: 1
+
+names: ["hand"]
