@@ -23,6 +23,7 @@ from .common import Focus
 from .common import check_anchor_order
 from .conv import C3
 from .conv import Conv
+from .conv import ConvBNMish
 from .conv import CrossConv
 from .conv import DWConv
 from .conv import MixConv2d
@@ -30,6 +31,8 @@ from .conv import MobileNetConv
 from .head import SPP
 from .neck import Bottleneck
 from .neck import BottleneckCSP
+from .neck import YOLOv4_Bottleneck
+from .neck import YOLOv4_BottleneckCSP
 from .pooling import Maxpool
 from ..common import model_info
 from ..fuse import fuse_conv_and_bn
@@ -208,7 +211,7 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
 
         n = max(round(n * gd), 1) if n > 1 else n  # depth gain
         if m in [nn.Conv2d, Conv, Bottleneck, SPP, DWConv, MixConv2d, MobileNetConv, Focus, CrossConv, BottleneckCSP,
-                 C3]:
+                 C3, YOLOv4_Bottleneck, YOLOv4_BottleneckCSP, ConvBNMish]:
             c1, c2 = ch[f], args[0]
 
             c2 = make_divisible(c2 * gw, 8) if c2 != no else c2

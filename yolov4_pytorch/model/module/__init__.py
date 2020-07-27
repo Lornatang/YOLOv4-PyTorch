@@ -23,6 +23,7 @@ from .common import Focus
 from .common import check_anchor_order
 from .conv import C3
 from .conv import Conv
+from .conv import ConvBNMish
 from .conv import CrossConv
 from .conv import DWConv
 from .conv import MixConv2d
@@ -34,6 +35,7 @@ from .layer import YOLO
 from .layer import parse_model
 from .neck import Bottleneck
 from .neck import BottleneckCSP
+from .neck import YOLOv4_Bottleneck
 
 __all__ = [
     "HardSwish",
@@ -48,6 +50,7 @@ __all__ = [
     "check_anchor_order",
     "C3",
     "Conv",
+    "ConvBNMish",
     "CrossConv",
     "DWConv",
     "MixConv2d",
@@ -59,4 +62,5 @@ __all__ = [
     "parse_model",
     "Bottleneck",
     "BottleneckCSP",
+    "YOLOv4_Bottleneck",
 ]

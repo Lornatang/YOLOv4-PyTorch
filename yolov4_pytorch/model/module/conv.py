@@ -18,6 +18,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from .activations import Mish
+
 
 def autopad(k, p=None):  # kernel, padding
     # Pad to 'same'
@@ -60,6 +62,22 @@ class Conv(nn.Module):
         return self.act(self.conv(x))
 
 
+class ConvBNMish(nn.Module):
+    # YOLOv4 conventional convolution module
+    def __init__(self, in_channels, out_channels, kernel_size=1, stride=1, padding=None, groups=1):
+        super(ConvBNMish, self).__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size, stride,
+                              padding=autopad(kernel_size, padding), groups=groups, bias=False)
+        self.bn = nn.BatchNorm2d(out_channels)
+        self.act = Mish()
+
+    def forward(self, x):
+        return self.act(self.bn(self.conv(x)))
+
+    def fuseforward(self, x):
+        return self.act(self.conv(x))
+
+
 class CrossConv(nn.Module):
     # Cross Convolution Downsample
     def __init__(self, c1, c2, k=3, s=1, g=1, e=1.0, shortcut=False):
@@ -67,7 +85,7 @@ class CrossConv(nn.Module):
         super(CrossConv, self).__init__()
         c_ = int(c2 * e)  # hidden channels
         self.cv1 = Conv(c1, c_, (1, k), (1, s))
-        self.cv2 = Conv(c_, c2, (k, 1), (s, 1), g=g)
+        self.cv2 = Conv(c_, c2, (k, 1), (s, 1), groups=g)
         self.add = shortcut and c1 == c2
 
     def forward(self, x):
@@ -76,7 +94,7 @@ class CrossConv(nn.Module):
 
 def DWConv(c1, c2, k=1, s=1, act=True):
     # Depthwise convolution
-    return Conv(c1, c2, k, s, g=math.gcd(c1, c2), act=act)
+    return Conv(c1, c2, k, s, groups=math.gcd(c1, c2), act=act)
 
 
 class MixConv2d(nn.Module):
