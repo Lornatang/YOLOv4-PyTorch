@@ -16,9 +16,6 @@ import os
 import torch
 import torch.nn as nn
 
-from .download import attempt_download
-
-
 class Ensemble(nn.ModuleList):
     # Ensemble of models
     def __init__(self):

@@ -26,8 +26,6 @@ from .device import init_seeds
 from .device import is_parallel
 from .device import select_device
 from .device import time_synchronized
-from .download import attempt_download
-from .download import gdrive_download
 from .iou import bbox_iou
 from .iou import box_iou
 from .iou import wh_iou
@@ -66,8 +64,6 @@ __all__ = [
     "is_parallel",
     "select_device",
     "time_synchronized",
-    "attempt_download",
-    "gdrive_download",
     "bbox_iou",
     "box_iou",
     "wh_iou",
