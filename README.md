@@ -277,6 +277,7 @@ The default settings are __not directly comparable__ with Detectron's standard s
 <td align="center">-</td>
 </tr>
 </tbody></table>
+
 **Common Settings for COCO Models**
 
 * All COCO models were trained on `train2017` and evaluated on `val2017`. 
