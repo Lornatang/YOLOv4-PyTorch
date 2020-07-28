@@ -16,6 +16,7 @@ import os
 import torch
 import torch.nn as nn
 
+
 class Ensemble(nn.ModuleList):
     # Ensemble of models
     def __init__(self):
