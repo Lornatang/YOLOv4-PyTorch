@@ -11,34 +11,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-from .adjust import exif_size
 from .common import check_image_size
 from .common import create_folder
+from .common import exif_size
+from .common import letterbox
 from .common import random_affine
 from .image import LoadImages
 from .image import LoadImagesAndLabels
 from .image import augment_hsv
+from .image import check_anchor_order
+from .image import check_anchors
 from .image import create_dataloader
+from .image import kmean_anchors
 from .image import load_image
 from .image import load_mosaic
 from .image import scale_image
-from .pad_resize import letterbox
 from .video import LoadStreams
 from .video import LoadWebcam
 
 __all__ = [
-    "exif_size",
     "check_image_size",
     "create_folder",
+    "exif_size",
+    "letterbox",
     "random_affine",
     "LoadImages",
     "LoadImagesAndLabels",
     "augment_hsv",
+    "check_anchor_order",
+    "check_anchors",
     "create_dataloader",
+    "kmean_anchors",
     "load_image",
     "load_mosaic",
     "scale_image",
-    "letterbox",
     "LoadStreams",
     "LoadWebcam",
 ]

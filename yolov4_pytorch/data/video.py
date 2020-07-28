@@ -18,7 +18,7 @@ from threading import Thread
 import cv2
 import numpy as np
 
-from .pad_resize import letterbox
+from .common import letterbox
 
 
 class LoadWebcam:  # for inference

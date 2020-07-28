@@ -21,43 +21,21 @@ import cv2
 import numpy as np
 import torch
 import torch.nn.functional as F
+import yaml
 from PIL import Image
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from .adjust import exif_size
 from .common import create_folder
+from .common import exif_size
+from .common import letterbox
 from .common import random_affine
-from .pad_resize import letterbox
-from ..utils.coords import xywh2xyxy
-from ..utils.coords import xyxy2xywh
+from ..utils import xywh2xyxy
+from ..utils import xyxy2xywh
 
 help_url = "https://github.com/Lornatang/YOLOv4-PyTorch#train-on-custom-dataset"
 img_formats = [".bmp", ".jpg", ".jpeg", ".png", ".tif", ".dng"]
 vid_formats = ['.mov', '.avi', '.mp4', '.mpg', '.mpeg', '.m4v', '.wmv', '.mkv']
-
-
-def create_dataloader(dataroot, image_size, batch_size, hyper_parameters=None, augment=None, cache=None, rect=None):
-    dataset = LoadImagesAndLabels(dataroot=dataroot,
-                                  image_size=image_size,
-                                  batch_size=batch_size,
-                                  augment=augment,  # augment images
-                                  hyper_parameters=hyper_parameters,  # augmentation hyper parameters
-                                  rect=rect,  # rectangular training
-                                  cache_images=cache,
-                                  stride=32)
-
-    dataloader = torch.utils.data.DataLoader(dataset,
-                                             batch_size=batch_size,
-                                             num_workers=8,
-                                             pin_memory=True,
-                                             collate_fn=LoadImagesAndLabels.collate_fn)
-    return dataset, dataloader
-
-
-def get_hash(files):
-    # Returns a single hash value of a list of files
-    return sum(os.path.getsize(f) for f in files if os.path.isfile(f))
 
 
 class LoadImages:  # for inference
@@ -282,7 +260,8 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
             pbar = tqdm(range(len(self.image_files)), desc='Caching images')
             self.image_hw0, self.image_hw = [None] * n, [None] * n
             for i in pbar:  # max 10k images
-                self.images[i], self.image_hw0[i], self.image_hw[i] = load_image(self, i)  # img, hw_original, hw_resized
+                self.images[i], self.image_hw0[i], self.image_hw[i] = load_image(self,
+                                                                                 i)  # img, hw_original, hw_resized
                 gb += self.images[i].nbytes
                 pbar.desc = 'Caching images (%.1fGB)' % (gb / 1E9)
 
@@ -401,6 +380,159 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         return torch.stack(img, 0), torch.cat(label, 0), path, shapes
 
 
+def create_dataloader(dataroot, image_size, batch_size, hyper_parameters=None, augment=None, cache=None, rect=None):
+    dataset = LoadImagesAndLabels(dataroot=dataroot,
+                                  image_size=image_size,
+                                  batch_size=batch_size,
+                                  augment=augment,  # augment images
+                                  hyper_parameters=hyper_parameters,  # augmentation hyper parameters
+                                  rect=rect,  # rectangular training
+                                  cache_images=cache,
+                                  stride=32)
+
+    dataloader = torch.utils.data.DataLoader(dataset,
+                                             batch_size=batch_size,
+                                             num_workers=8,
+                                             pin_memory=True,
+                                             collate_fn=LoadImagesAndLabels.collate_fn)
+    return dataset, dataloader
+
+
+def check_anchor_order(m):
+    # Check anchor order against stride order for YOLOv5 Detect() module m, and correct if necessary
+    a = m.anchor_grid.prod(-1).view(-1)  # anchor area
+    da = a[-1] - a[0]  # delta a
+    ds = m.stride[-1] - m.stride[0]  # delta s
+    if da.sign() != ds.sign():  # same order
+        print('Reversing anchor order')
+        m.anchors[:] = m.anchors.flip(0)
+        m.anchor_grid[:] = m.anchor_grid.flip(0)
+
+
+def check_anchors(dataset, model, thr=4.0, image_size=640):
+    # Check anchor fit to data, recompute if necessary
+    print('\nAnalyzing anchors... ', end='')
+    m = model.module.model[-1] if hasattr(model, 'module') else model.model[-1]  # Detect()
+    shapes = image_size * dataset.shapes / dataset.shapes.max(1, keepdims=True)
+    scale = np.random.uniform(0.9, 1.1, size=(shapes.shape[0], 1))  # augment scale
+    wh = torch.tensor(np.concatenate([l[:, 3:5] * s for s, l in zip(shapes * scale, dataset.labels)])).float()  # wh
+
+    def metric(k):  # compute metric
+        r = wh[:, None] / k[None]
+        x = torch.min(r, 1. / r).min(2)[0]  # ratio metric
+        best = x.max(1)[0]  # best_x
+        return (best > 1. / thr).float().mean()  #  best possible recall
+
+    bpr = metric(m.anchor_grid.clone().cpu().view(-1, 2))
+    print('Best Possible Recall (BPR) = %.4f' % bpr, end='')
+    if bpr < 0.99:  # threshold to recompute
+        print(f'. Attempting to generate improved anchors, please wait... {bpr}')
+        na = m.anchor_grid.numel() // 2  # number of anchors
+        new_anchors = kmean_anchors(dataset, n=na, image_size=image_size, thr=thr, gen=1000, verbose=False)
+        new_bpr = metric(new_anchors.reshape(-1, 2))
+        if new_bpr > bpr:  # replace anchors
+            new_anchors = torch.tensor(new_anchors, device=m.anchors.device).type_as(m.anchors)
+            m.anchor_grid[:] = new_anchors.clone().view_as(m.anchor_grid)  # for inference
+            m.anchors[:] = new_anchors.clone().view_as(m.anchors) / m.stride.to(m.anchors.device).view(-1, 1, 1)  # loss
+            check_anchor_order(m)
+            print('New anchors saved to model. Update model *.yaml to use these anchors in the future.')
+        else:
+            print('Original anchors better than new anchors. Proceeding with original anchors.')
+    print('')  # newline
+
+
+def get_hash(files):
+    # Returns a single hash value of a list of files
+    return sum(os.path.getsize(f) for f in files if os.path.isfile(f))
+
+
+def kmean_anchors(dataroot, n=9, image_size=640, thr=4.0, gen=1000, verbose=True):
+    """ Creates kmeans-evolved anchors from training dataset
+
+        Arguments:
+            dataroot: path to dataset *.yaml, or a loaded dataset
+            n: number of anchors
+            image_size: image size used for training
+            thr: anchor-label wh ratio threshold hyperparameter hyp['anchor_t'] used for training, default=4.0
+            gen: generations to evolve anchors using genetic algorithm
+            verbose (bool, default False): if specified, we will print out a debug
+                description of the trace being exported
+
+        Return:
+            k: kmeans evolved anchors
+
+        Usage:
+            from utils.utils import *; _ = kmean_anchors()
+    """
+    thr = 1. / thr
+
+    def metric(k, wh):  # compute metrics
+        r = wh[:, None] / k[None]
+        x = torch.min(r, 1. / r).min(2)[0]  # ratio metric
+        return x, x.max(1)[0]  # x, best_x
+
+    def fitness(k):  # mutation fitness
+        _, best = metric(torch.tensor(k, dtype=torch.float32), wh)
+        return (best * (best > thr).float()).mean()  # fitness
+
+    def print_results(k):
+        k = k[np.argsort(k.prod(1))]  # sort small to large
+        x, best = metric(k, wh0)
+        bpr, aat = (best > thr).float().mean(), (x > thr).float().mean() * n  # best possible recall, anch > thr
+        print('thr=%.2f: %.4f best possible recall, %.2f anchors past thr' % (thr, bpr, aat))
+        print('n=%g, img_size=%s, metric_all=%.3f/%.3f-mean/best, past_thr=%.3f-mean: ' %
+              (n, image_size, x.mean(), best.mean(), x[x > thr].mean()), end='')
+        for i, x in enumerate(k):
+            print('%i,%i' % (round(x[0]), round(x[1])), end=',  ' if i < len(k) - 1 else '\n')  # use in *.cfg
+        return k
+
+    if isinstance(dataroot, str):  # *.yaml file
+        with open(dataroot) as f:
+            data_dict = yaml.load(f, Loader=yaml.FullLoader)  # model dict
+        dataset = LoadImagesAndLabels(data_dict['train'], augment=True, rect=True)
+    else:
+        dataset = dataroot  # dataset
+
+    # Get label wh
+    shapes = image_size * dataset.shapes / dataset.shapes.max(1, keepdims=True)
+    wh0 = np.concatenate([l[:, 3:5] * s for s, l in zip(shapes, dataset.labels)])  # wh
+
+    # Filter
+    i = (wh0 < 3.0).any(1).sum()
+    if i:
+        print('WARNING: Extremely small objects found. '
+              '%g of %g labels are < 3 pixels in width or height.' % (i, len(wh0)))
+    wh = wh0[(wh0 >= 2.0).any(1)]  # filter > 2 pixels
+
+    # Kmeans calculation
+    from scipy.cluster.vq import kmeans
+    print('Running kmeans for %g anchors on %g points...' % (n, len(wh)))
+    s = wh.std(0)  # sigmas for whitening
+    k, dist = kmeans(wh / s, n, iter=30)  # points, mean distance
+    k *= s
+    wh = torch.tensor(wh, dtype=torch.float32)  # filtered
+    wh0 = torch.tensor(wh0, dtype=torch.float32)  # unflitered
+    k = print_results(k)
+
+    # Evolve
+    npr = np.random
+    f, sh, mp, s = fitness(k), k.shape, 0.9, 0.1  # fitness, generations, mutation prob, sigma
+    pbar = tqdm(range(gen), desc='Evolving anchors with Genetic Algorithm')  # progress bar
+    for _ in pbar:
+        v = np.ones(sh)
+        while (v == 1).all():  # mutate until a change occurs (prevent duplicates)
+            v = ((npr.random(sh) < mp) * npr.random() * npr.randn(*sh) * s + 1).clip(0.3, 3.0)
+        kg = (k.copy() * v).clip(min=2.0)
+        fg = fitness(kg)
+        if fg > f:
+            f, k = fg, kg.copy()
+            pbar.desc = 'Evolving anchors with Genetic Algorithm: fitness = %.4f' % f
+            if verbose:
+                print_results(k)
+
+    return print_results(k)
+
+
 def load_image(self, index):
     # loads 1 image from dataset, returns img, original hw, resized hw
     img = self.images[index]
@@ -465,11 +597,11 @@ def load_mosaic(self, index):
 
     # Augment
     image4, labels4 = random_affine(image4, labels4,
-                                  degrees=self.hyper_parameters['degrees'],
-                                  translate=self.hyper_parameters['translate'],
-                                  scale=self.hyper_parameters['scale'],
-                                  shear=self.hyper_parameters['shear'],
-                                  border=self.mosaic_border)  # border to remove
+                                    degrees=self.hyper_parameters['degrees'],
+                                    translate=self.hyper_parameters['translate'],
+                                    scale=self.hyper_parameters['scale'],
+                                    shear=self.hyper_parameters['shear'],
+                                    border=self.mosaic_border)  # border to remove
 
     return image4, labels4
 

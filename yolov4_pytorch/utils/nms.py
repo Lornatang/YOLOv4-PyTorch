@@ -16,7 +16,7 @@ import time
 import torch
 import torchvision
 
-from .coords import xywh2xyxy
+from .common import xywh2xyxy
 from .iou import box_iou
 
 

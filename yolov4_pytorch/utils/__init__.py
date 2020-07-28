@@ -11,16 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-from .common import check_anchor_order
-from .common import check_anchors
+from .common import clip_coords
 from .common import coco80_to_coco91_class
-from .common import kmean_anchors
 from .common import make_divisible
 from .common import output_to_target
-from .coords import clip_coords
-from .coords import scale_coords
-from .coords import xywh2xyxy
-from .coords import xyxy2xywh
+from .common import scale_coords
+from .common import xywh2xyxy
+from .common import xyxy2xywh
 from .device import init_seeds
 from .device import is_parallel
 from .device import select_device
@@ -48,13 +45,10 @@ from .weights import create_pretrained
 from .weights import initialize_weights
 
 __all__ = [
-    "check_anchor_order",
-    "check_anchors",
+    "clip_coords",
     "coco80_to_coco91_class",
-    "kmean_anchors",
     "make_divisible",
     "output_to_target",
-    "clip_coords",
     "scale_coords",
     "xywh2xyxy",
     "xyxy2xywh",

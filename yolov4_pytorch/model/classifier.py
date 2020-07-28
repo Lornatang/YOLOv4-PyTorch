@@ -17,9 +17,9 @@ import torch
 import torch.nn as nn
 import torchvision.models as models
 
-from ..utils.coords import scale_coords
-from ..utils.coords import xywh2xyxy
-from ..utils.coords import xyxy2xywh
+from ..utils import scale_coords
+from ..utils import xywh2xyxy
+from ..utils import xyxy2xywh
 
 
 def apply_classifier(x, model, img, im0):

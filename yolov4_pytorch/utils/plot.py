@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from ..utils.coords import xywh2xyxy
+from ..utils import xywh2xyxy
 
 matplotlib.rc("font", **{"size": 11})
 

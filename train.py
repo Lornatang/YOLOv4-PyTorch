@@ -33,7 +33,7 @@ from yolov4_pytorch.data import check_image_size
 from yolov4_pytorch.data import create_dataloader
 from yolov4_pytorch.model import YOLO
 from yolov4_pytorch.solver import ModelEMA
-from yolov4_pytorch.utils import check_anchors
+from yolov4_pytorch.data import check_anchors
 from yolov4_pytorch.utils import compute_loss
 from yolov4_pytorch.utils import fitness
 from yolov4_pytorch.utils import init_seeds
