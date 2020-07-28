@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-from .common import ap_per_class
 from .common import check_anchor_order
 from .common import check_anchors
 from .common import coco80_to_coco91_class
@@ -31,6 +30,7 @@ from .iou import box_iou
 from .iou import wh_iou
 from .loss import BCEBlurWithLogitsLoss
 from .loss import FocalLoss
+from .loss import ap_per_class
 from .loss import build_targets
 from .loss import compute_ap
 from .loss import compute_loss
@@ -48,12 +48,10 @@ from .weights import create_pretrained
 from .weights import initialize_weights
 
 __all__ = [
-    "ap_per_class",
     "check_anchor_order",
     "check_anchors",
     "coco80_to_coco91_class",
     "kmean_anchors",
-    "compute_ap",
     "make_divisible",
     "output_to_target",
     "clip_coords",
@@ -69,6 +67,7 @@ __all__ = [
     "wh_iou",
     "BCEBlurWithLogitsLoss",
     "FocalLoss",
+    "ap_per_class",
     "build_targets",
     "compute_ap",
     "compute_loss",

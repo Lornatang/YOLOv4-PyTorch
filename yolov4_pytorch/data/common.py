@@ -20,8 +20,6 @@ import shutil
 import cv2
 import numpy as np
 
-from ..utils.common import make_divisible
-
 
 def check_image_size(image_size, stride=32):
     """ Verify img_size is a multiple of stride s
@@ -34,7 +32,7 @@ def check_image_size(image_size, stride=32):
         Return a new image size.
 
     """
-    new_size = make_divisible(image_size, int(stride))  # ceil gs-multiple
+    new_size = math.ceil(image_size / stride) * stride  # ceil gs-multiple
     if new_size != image_size:
         print(f"WARNING: --image-size {image_size} must be multiple of max stride {stride}, updating to {new_size}")
     return new_size
