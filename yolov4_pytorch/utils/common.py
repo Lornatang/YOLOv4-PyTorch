@@ -11,9 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-import glob
 import math
-import os
 
 import numpy as np
 import torch
@@ -22,7 +20,7 @@ import yaml
 from tqdm import tqdm
 
 from .loss import compute_ap
-from .loss import fitness
+from ..data import LoadImagesAndLabels
 
 
 def ap_per_class(tp, conf, pred_cls, target_cls):
@@ -108,7 +106,7 @@ def check_anchors(dataset, model, thr=4.0, image_size=640):
     if bpr < 0.99:  # threshold to recompute
         print(f'. Attempting to generate improved anchors, please wait... {bpr}')
         na = m.anchor_grid.numel() // 2  # number of anchors
-        new_anchors = kmean_anchors(dataset, n=na, img_size=image_size, thr=thr, gen=1000, verbose=False)
+        new_anchors = kmean_anchors(dataset, n=na, image_size=image_size, thr=thr, gen=1000, verbose=False)
         new_bpr = metric(new_anchors.reshape(-1, 2))
         if new_bpr > bpr:  # replace anchors
             new_anchors = torch.tensor(new_anchors, device=m.anchors.device).type_as(m.anchors)
@@ -119,16 +117,6 @@ def check_anchors(dataset, model, thr=4.0, image_size=640):
         else:
             print('Original anchors better than new anchors. Proceeding with original anchors.')
     print('')  # newline
-
-
-def check_file(file):
-    # Searches for file if not found locally
-    if os.path.isfile(file):
-        return file
-    else:
-        files = glob.glob('./**/' + file, recursive=True)  # find file
-        assert len(files), 'File Not Found: %s' % file  # assert file was found
-        return files[0]  # return first file if multiple found
 
 
 def coco80_to_coco91_class():
@@ -144,7 +132,7 @@ def make_divisible(x, divisor):
 
 
 def output_to_target(output, width, height):
-    # Convert model output to target format [batch_id, class_id, x, y, w, h, conf]
+    # Convert model output to target format [batch_id, class_id, x, y, w, h, confidence]
     if isinstance(output, torch.Tensor):
         output = output.cpu().numpy()
 
@@ -165,28 +153,17 @@ def output_to_target(output, width, height):
     return np.array(targets)
 
 
-def print_mutation(hyp, results, bucket=''):
-    # Print mutation results to evolve.txt (for use with train.py --evolve)
-    a = '%10s' * len(hyp) % tuple(hyp.keys())  # hyperparam keys
-    b = '%10.3g' * len(hyp) % tuple(hyp.values())  # hyperparam values
-    c = '%10.4g' * len(results) % results  # results (P, R, mAP, F1, test_loss)
-    print('\n%s\n%s\nEvolved fitness: %s\n' % (a, b, c))
-
-    with open('evolve.txt', 'a') as f:  # append result
-        f.write(c + b + '\n')
-    x = np.unique(np.loadtxt('evolve.txt', ndmin=2), axis=0)  # load unique rows
-    np.savetxt('evolve.txt', x[np.argsort(-fitness(x))], '%10.3g')  # save sort by fitness
-
-
-def kmean_anchors(path='./data/coco2017.yaml', n=9, img_size=640, thr=4.0, gen=1000, verbose=True):
+def kmean_anchors(dataroot, n=9, image_size=640, thr=4.0, gen=1000, verbose=True):
     """ Creates kmeans-evolved anchors from training dataset
 
         Arguments:
-            path: path to dataset *.yaml, or a loaded dataset
+            dataroot: path to dataset *.yaml, or a loaded dataset
             n: number of anchors
-            img_size: image size used for training
+            image_size: image size used for training
             thr: anchor-label wh ratio threshold hyperparameter hyp['anchor_t'] used for training, default=4.0
             gen: generations to evolve anchors using genetic algorithm
+            verbose (bool, default False): if specified, we will print out a debug
+                description of the trace being exported
 
         Return:
             k: kmeans evolved anchors
@@ -199,7 +176,6 @@ def kmean_anchors(path='./data/coco2017.yaml', n=9, img_size=640, thr=4.0, gen=1
     def metric(k, wh):  # compute metrics
         r = wh[:, None] / k[None]
         x = torch.min(r, 1. / r).min(2)[0]  # ratio metric
-        # x = wh_iou(wh, torch.tensor(k))  # iou metric
         return x, x.max(1)[0]  # x, best_x
 
     def fitness(k):  # mutation fitness
@@ -212,21 +188,20 @@ def kmean_anchors(path='./data/coco2017.yaml', n=9, img_size=640, thr=4.0, gen=1
         bpr, aat = (best > thr).float().mean(), (x > thr).float().mean() * n  # best possible recall, anch > thr
         print('thr=%.2f: %.4f best possible recall, %.2f anchors past thr' % (thr, bpr, aat))
         print('n=%g, img_size=%s, metric_all=%.3f/%.3f-mean/best, past_thr=%.3f-mean: ' %
-              (n, img_size, x.mean(), best.mean(), x[x > thr].mean()), end='')
+              (n, image_size, x.mean(), best.mean(), x[x > thr].mean()), end='')
         for i, x in enumerate(k):
             print('%i,%i' % (round(x[0]), round(x[1])), end=',  ' if i < len(k) - 1 else '\n')  # use in *.cfg
         return k
 
-    if isinstance(path, str):  # *.yaml file
-        with open(path) as f:
+    if isinstance(dataroot, str):  # *.yaml file
+        with open(dataroot) as f:
             data_dict = yaml.load(f, Loader=yaml.FullLoader)  # model dict
-        from utils.datasets import LoadImagesAndLabels
         dataset = LoadImagesAndLabels(data_dict['train'], augment=True, rect=True)
     else:
-        dataset = path  # dataset
+        dataset = dataroot  # dataset
 
     # Get label wh
-    shapes = img_size * dataset.shapes / dataset.shapes.max(1, keepdims=True)
+    shapes = image_size * dataset.shapes / dataset.shapes.max(1, keepdims=True)
     wh0 = np.concatenate([l[:, 3:5] * s for s, l in zip(shapes, dataset.labels)])  # wh
 
     # Filter
@@ -245,19 +220,6 @@ def kmean_anchors(path='./data/coco2017.yaml', n=9, img_size=640, thr=4.0, gen=1
     wh = torch.tensor(wh, dtype=torch.float32)  # filtered
     wh0 = torch.tensor(wh0, dtype=torch.float32)  # unflitered
     k = print_results(k)
-
-    # Plot
-    # k, d = [None] * 20, [None] * 20
-    # for i in tqdm(range(1, 21)):
-    #     k[i-1], d[i-1] = kmeans(wh / s, i)  # points, mean distance
-    # fig, ax = plt.subplots(1, 2, figsize=(14, 7))
-    # ax = ax.ravel()
-    # ax[0].plot(np.arange(1, 21), np.array(d) ** 2, marker='.')
-    # fig, ax = plt.subplots(1, 2, figsize=(14, 7))  # plot wh
-    # ax[0].hist(wh[wh[:, 0]<100, 0],400)
-    # ax[1].hist(wh[wh[:, 1]<100, 1],400)
-    # fig.tight_layout()
-    # fig.savefig('wh.png', dpi=200)
 
     # Evolve
     npr = np.random

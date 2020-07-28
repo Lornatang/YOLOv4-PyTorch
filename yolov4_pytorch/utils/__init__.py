@@ -18,7 +18,6 @@ from .common import coco80_to_coco91_class
 from .common import kmean_anchors
 from .common import make_divisible
 from .common import output_to_target
-from .common import print_mutation
 from .coords import clip_coords
 from .coords import scale_coords
 from .coords import xywh2xyxy
@@ -60,7 +59,6 @@ __all__ = [
     "compute_ap",
     "make_divisible",
     "output_to_target",
-    "print_mutation",
     "clip_coords",
     "scale_coords",
     "xywh2xyxy",
