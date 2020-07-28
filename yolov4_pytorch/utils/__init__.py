@@ -46,7 +46,6 @@ from .plot import plot_results
 from .prune import prune
 from .prune import sparsity
 from .weights import Ensemble
-from .weights import attempt_load
 from .weights import create_pretrained
 from .weights import initialize_weights
 
@@ -87,7 +86,6 @@ __all__ = [
     "prune",
     "sparsity",
     "Ensemble",
-    "attempt_load",
     "create_pretrained",
     "initialize_weights",
 ]
