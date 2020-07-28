@@ -66,7 +66,7 @@ def train():
     batch_size = args.batch_size
     config_file = args.config_file
     data = args.data
-    weights = "weights/checkpoint" if args.resume and not args.weights else args.weights
+    weights = "weights/checkpoint.pth" if args.resume and not args.weights else args.weights
     image_size = check_image_size(args.image_size, 32)
     device = select_device(args.device, batch_size=args.batch_size)
 
@@ -76,7 +76,7 @@ def train():
         data_dict = yaml.load(f, Loader=yaml.FullLoader)
     train_path, val_path = data_dict["train"], data_dict["val"]
     number_classes, names = int(data_dict["number_classes"]), data_dict["names"]
-    assert len(names) == number_classes, f"{len(names)} names found for nc={number_classes} dataset in {data}"
+    assert len(names) == number_classes, f"{len(names)} names found, number_classes={number_classes} dataset in {data}"
 
     # Create model
     model = YOLO(config_file=config_file, number_classes=number_classes).to(device)
