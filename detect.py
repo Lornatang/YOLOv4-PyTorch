@@ -71,7 +71,7 @@ def detect():
 
     # Create model
     model = YOLO(config_file=config_file, number_classes=number_classes).to(device)
-    image_size = check_image_size(args.image_size, stride=model.stride.max())
+    image_size = check_image_size(args.image_size, stride=32)
 
     # Load model
     model.load_state_dict(torch.load(weights)["state_dict"])
@@ -112,6 +112,7 @@ def detect():
 
     # Run inference
     start_time = time.time()
+
     image = torch.zeros((1, 3, image_size, image_size), device=device)  # init image
     _ = model(image.half() if half else image) if device.type != "cpu" else None  # run once
     for filename, image, raw_images, video_capture in dataset:
