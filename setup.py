@@ -18,7 +18,7 @@ URL = 'https://github.com/Lornatang/YOLOv4-PyTorch'
 EMAIL = 'liuchangyu1111@gmail.com'
 AUTHOR = 'Liu Changyu'
 REQUIRES_PYTHON = '>=3.6.5'
-VERSION = '0.0.1'
+VERSION = '0.1.0'
 
 # What packages are required for this module to be executed?
 REQUIRED = [
