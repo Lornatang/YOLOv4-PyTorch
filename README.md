@@ -238,7 +238,7 @@ The default settings are __not directly comparable__ with Detectron's standard s
 <td align="center">435</td>
 <td align="center">7.31M</td>
 <td align="center">17.0B</td>
-<td align="center"><a href="https://github.com/Lornatang/YOLOv4-PyTorch/releases/download/0.1.0/yolov5-small-f1901d53.pth">model</a></td>
+<td align="center"><a href="https://github.com/Lornatang/YOLOv4-PyTorch/releases/download/v0.1/yolov5-small-f1901d53.pth">model</a></td>
 </tr>
 <!-- ROW: YOLOv5-medium -->
  <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5-medium.yaml">YOLOv5-medium</a></td>
@@ -250,7 +250,7 @@ The default settings are __not directly comparable__ with Detectron's standard s
 <td align="center">263</td>
 <td align="center">21.56M</td>
 <td align="center">51.7B</td>
-<td align="center"><a href="https://github.com/Lornatang/YOLOv4-PyTorch/releases/download/0.1.0/yolov5-medium-67dd4b3a.pth">model</a></td>
+<td align="center"><a href="https://github.com/Lornatang/YOLOv4-PyTorch/releases/download/v0.1/yolov5-medium-67dd4b3a.pth">model</a></td>
 </tr>
 <!-- ROW: YOLOv5-large -->
  <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5-large.yaml">YOLOv5-large</a></td>
@@ -262,7 +262,7 @@ The default settings are __not directly comparable__ with Detectron's standard s
 <td align="center">164</td>
 <td align="center">47.50M</td>
 <td align="center">116.4B</td>
-<td align="center"><a href="https://github.com/Lornatang/YOLOv4-PyTorch/releases/download/0.1.0/yolov5-large-5519e248.pth">model</a></td>
+<td align="center"><a href="https://github.com/Lornatang/YOLOv4-PyTorch/releases/download/v0.1/yolov5-large-5519e248.pth">model</a></td>
 </tr>
 <!-- ROW: YOLOv5-xlarge -->
  <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5-xlarge.yaml">YOLOv5-xlarge</a></td>
