@@ -230,38 +230,38 @@ The default settings are __not directly comparable__ with Detectron's standard s
 </tr>
 <!-- ROW: YOLOv5-small -->
  <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5-small.yaml">YOLOv5-small</a></td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
+<td align="center">5.4</td>
+<td align="center">2.3</td>
+<td align="center">1.7</td>
+<td align="center">49.3</td>
+<td align="center">75.9</td>
+<td align="center">435</td>
+<td align="center">7.31M</td>
+<td align="center">17.0B</td>
 <td align="center">-</td>
 </tr>
 <!-- ROW: YOLOv5-medium -->
  <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5-medium.yaml">YOLOv5-medium</a></td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
+<td align="center">3.6</td>
+<td align="center">3.8</td>
+<td align="center">3.1</td>
+<td align="center">56.5</td>
+<td align="center">80.3</td>
+<td align="center">263</td>
+<td align="center">21.56M</td>
+<td align="center">51.7B</td>
 <td align="center">-</td>
 </tr>
 <!-- ROW: YOLOv5-large -->
  <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5-large.yaml">YOLOv5-large</a></td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
+<td align="center">2.8</td>
+<td align="center">6.1</td>
+<td align="center">5.1</td>
+<td align="center">59.4</td>
+<td align="center">81.6</td>
+<td align="center">164</td>
+<td align="center">47.50M</td>
+<td align="center">116.4B</td>
 <td align="center">-</td>
 </tr>
 <!-- ROW: YOLOv5-xlarge -->
