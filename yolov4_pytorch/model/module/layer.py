@@ -17,6 +17,7 @@ from pathlib import Path
 
 import torch
 import torch.nn as nn
+from torch.cuda import amp
 
 from .common import Concat
 from .common import Focus
@@ -116,6 +117,7 @@ class YOLO(nn.Module):
         self.info()
         print('')
 
+    @amp.autocast()
     def forward(self, x, augment=False, profile=False):
         if augment:
             image_size = x.shape[-2:]  # height, width
@@ -126,15 +128,16 @@ class YOLO(nn.Module):
                 xi = scale_image(x.flip(fi) if fi else x, si)
                 yi = self.forward_once(xi)[0]  # forward
                 yi[..., :4] /= si  # de-scale
-                if fi is 2:
+                if fi == 2:
                     yi[..., 1] = image_size[0] - yi[..., 1]  # de-flip ud
-                elif fi is 3:
+                elif fi == 3:
                     yi[..., 0] = image_size[1] - yi[..., 0]  # de-flip lr
                 y.append(yi)
             return torch.cat(y, 1), None  # augmented inference, train
         else:
             return self.forward_once(x, profile)  # single-scale inference, train
 
+    @amp.autocast()
     def forward_once(self, x, profile=False):
         y, dt = [], []  # outputs
         for m in self.model:

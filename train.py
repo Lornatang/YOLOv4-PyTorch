@@ -24,16 +24,16 @@ import torch.optim
 import torch.optim.lr_scheduler
 import torch.utils.data
 import yaml
-from apex import amp
+from torch.cuda import amp
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from test import evaluate
+from yolov4_pytorch.data import check_anchors
 from yolov4_pytorch.data import check_image_size
 from yolov4_pytorch.data import create_dataloader
 from yolov4_pytorch.model import YOLO
 from yolov4_pytorch.solver import ModelEMA
-from yolov4_pytorch.data import check_anchors
 from yolov4_pytorch.utils import compute_loss
 from yolov4_pytorch.utils import fitness
 from yolov4_pytorch.utils import init_seeds
@@ -134,9 +134,6 @@ def train():
 
         del checkpoint
 
-    # Mixed precision training https://github.com/NVIDIA/apex
-    model, optimizer = amp.initialize(model, optimizer, opt_level="O1", verbosity=0)
-
     # Scheduler https://arxiv.org/pdf/1812.01187.pdf
     lf = lambda x: (((1 + math.cos(x * math.pi / epochs)) / 2) ** 1.0) * 0.8 + 0.2  # cosine
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
@@ -194,6 +191,9 @@ def train():
     print(f"Using {train_dataloader.num_workers} dataloader workers")
     print(f"Starting training for {epochs} epochs...")
 
+    # Creates a GradScaler once at the beginning of training.
+    scaler = amp.GradScaler()
+
     for epoch in range(start_epoch, epochs):
         model.train()
 
@@ -219,28 +219,30 @@ def train():
                     if "momentum" in x:
                         x["momentum"] = np.interp(ni, xi, [0.9, hyper_parameters["momentum"]])
 
-            # Forward
-            outputs = model(images)
+            # Mixed precision training
+            with amp.autocast():
+                outputs = model(images)
+                loss, loss_items = compute_loss(outputs, targets.to(device), model)  # scaled by batch_size
 
-            # Loss
-            loss, loss_items = compute_loss(outputs, targets.to(device), model)  # scaled by batch_size
             if not torch.isfinite(loss):
                 print(f"WARNING: non-finite loss, ending training {loss_items}")
                 return results
 
-            # Backward
-            with amp.scale_loss(loss, optimizer) as scaled_loss:
-                scaled_loss.backward()
+            # Scales loss.  Calls backward() on scaled loss to create scaled gradients.
+            # Backward passes under autocast are not recommended.
+            # Backward ops run in the same dtype autocast chose for corresponding forward ops.
+            scaler.scale(loss).backward()
 
             # Optimize
             if ni % accumulate == 0:
-                optimizer.step()
+                scaler.step(optimizer)
+                scaler.update()
                 optimizer.zero_grad()
                 ema.update(model)
 
             # Print
             mean_losses = (mean_losses * i + loss_items) / (i + 1)  # update mean losses
-            progress_bar.set_description(f"{epoch:>6}/{(epochs - 1):>1}{torch.cuda.memory_cached() / 1E9:>9.1f}G"
+            progress_bar.set_description(f"{epoch:>6}/{(epochs - 1):>1}{torch.cuda.memory_reserved() / 1E9:>9.1f}G"
                                          f"{mean_losses[0]:>10.4f}{mean_losses[1]:>10.4f}"
                                          f"{mean_losses[2]:>10.4f}{mean_losses[3]:>10.4f}"
                                          f"{targets.shape[0]:>10}{images.shape[-1]:>10}")
