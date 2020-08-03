@@ -41,7 +41,6 @@ REQUIRED = [
     'pathlib'
     'yaml'
     'setuptools'
-    'apex'
 ]
 
 # What packages are optional?
