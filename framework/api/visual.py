@@ -31,7 +31,7 @@ from yolov4_pytorch.utils import select_device
 device = select_device()
 
 # move the model to GPU for speed if available
-model = YOLO("../configs/COCO-Detection/mobilenetv1.yaml").to(device)
+model = YOLO("../configs/COCO-Detection/mobilenet-v1.yaml").to(device)
 # Load weight
 model.load_state_dict(
     torch.load("../weights/COCO-Detection/mobilenetv1.pth", map_location=device)["state_dict"])
