@@ -23,8 +23,6 @@ This implementation is a work in progress -- new features are currently being im
 3. [Usage](#usage)
     * [Train](#train)
     * [Test](#test)
-        * [Common settings for voc models](#common-settings-for-voc-models)
-        * [Common settings for coco models](#common-settings-for-coco-models)
     * [Inference](#inference)
 4. [Train on Custom Dataset](#train-on-custom-dataset)
 5. [Credit](#credit) 
@@ -145,16 +143,16 @@ The default settings are __not directly comparable__ with Detectron's standard s
 <th valign="bottom">download</th>
 <!-- TABLE BODY -->
 <!-- ROW: MobileNet-v1 -->
- <tr><td align="left"><a href="configs/PascalVOC-Detection/mobilenetv1.yaml">MobileNet-v1</a></td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
+ <tr><td align="left"><a href="configs/PascalVOC-Detection/mobilenet-v1.yaml">MobileNet-v1</a></td>
+<td align="center">9.6</td>
+<td align="center">2.5</td>
+<td align="center">4.0</td>
+<td align="center">31.2</td>
+<td align="center">61.3</td>
+<td align="center">400</td>
+<td align="center">4.95M</td>
+<td align="center">11.3B</td>
+<td align="center"><a href="https://github.com/Lornatang/YOLOv4-PyTorch/releases/download/v0.2/mobilenetv1-2a658240.pth">model</a></td>
 </tr>
 <!-- ROW: VGG16 -->
  <tr><td align="left"><a href="configs/PascalVOC-Detection/vgg16.yaml">VGG16</a></td>
@@ -170,63 +168,63 @@ The default settings are __not directly comparable__ with Detectron's standard s
 </tr>
 <!-- ROW: YOLOv3-Tiny -->
  <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov3-tiny.yaml">YOLOv3-Tiny</a></td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
+<td align="center">10.5</td>
+<td align="center">1.5</td>
+<td align="center">3.7</td>
+<td align="center">24.3</td>
+<td align="center">53.1</td>
+<td align="center">667</td>
+<td align="center">7.96M</td>
+<td align="center">10.5B</td>
+<td align="center"><a href="https://github.com/Lornatang/YOLOv4-PyTorch/releases/download/v0.2/yolov3-tiny-9b89a609.pth">model</a></td>
 </tr>
 <!-- ROW: YOLOv3 -->
  <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov3.yaml">YOLOv3</a></td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
+<td align="center">2.4</td>
+<td align="center">6.7</td>
+<td align="center">6.4</td>
+<td align="center">57.9</td>
+<td align="center">82.6</td>
+<td align="center">149</td>
+<td align="center">61.79M</td>
+<td align="center">155.6B</td>
+<td align="center"><a href="https://github.com/Lornatang/YOLOv4-PyTorch/releases/download/v0.2/yolov3-df67e38d.pth">model</a></td>
 </tr>
 <!-- ROW: YOLOv3-SPP -->
  <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov3-spp.yaml">YOLOv3-SPP</a></td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
+<td align="center">2.4</td>
+<td align="center">6.7</td>
+<td align="center">6.3</td>
+<td align="center">59.7</td>
+<td align="center">83.3</td>
+<td align="center">149</td>
+<td align="center">62.84M</td>
+<td align="center">156.5B</td>
+<td align="center"><a href="https://github.com/Lornatang/YOLOv4-PyTorch/releases/download/v0.2/yolov3-spp-e90fa0a8.pth">model</a></td>
 </tr>
 <!-- ROW: YOLOv4-Tiny -->
  <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov4-tiny.yaml">YOLOv4-Tiny</a></td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
+<td align="center">12.3</td>
+<td align="center">1.5</td>
+<td align="center">2.7</td>
+<td align="center">20.0</td>
+<td align="center">46.0</td>
+<td align="center">667</td>
+<td align="center">3.10M</td>
+<td align="center">6.5B</td>
+<td align="center"><a href="https://github.com/Lornatang/YOLOv4-PyTorch/releases/download/v0.2/yolov4-tiny-d7f4c31e.pth">model</a></td>
 </tr>
 <!-- ROW: YOLOv4 -->
  <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov4.yaml">YOLOv4</a></td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
+<td align="center">2.1</td>
+<td align="center">7.5</td>
+<td align="center">6.7</td>
+<td align="center">61.4</td>
+<td align="center">83.7</td>
+<td align="center">133</td>
+<td align="center">60.52M</td>
+<td align="center">131.6B</td>
+<td align="center"><a href="https://github.com/Lornatang/YOLOv4-PyTorch/releases/download/v0.2/yolov4-45544c52.pth">model</a></td>
 </tr>
 <!-- ROW: YOLOv5-small -->
  <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5-small.yaml">YOLOv5-small</a></td>
@@ -238,7 +236,7 @@ The default settings are __not directly comparable__ with Detectron's standard s
 <td align="center">435</td>
 <td align="center">7.31M</td>
 <td align="center">17.0B</td>
-<td align="center"><a href="https://github.com/Lornatang/YOLOv4-PyTorch/releases/download/v0.1/yolov5-small-f1901d53.pth">model</a></td>
+<td align="center"><a href="https://github.com/Lornatang/YOLOv4-PyTorch/releases/download/v0.2/yolov5-small-f1901d53.pth">model</a></td>
 </tr>
 <!-- ROW: YOLOv5-medium -->
  <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5-medium.yaml">YOLOv5-medium</a></td>
@@ -250,7 +248,7 @@ The default settings are __not directly comparable__ with Detectron's standard s
 <td align="center">263</td>
 <td align="center">21.56M</td>
 <td align="center">51.7B</td>
-<td align="center"><a href="https://github.com/Lornatang/YOLOv4-PyTorch/releases/download/v0.1/yolov5-medium-67dd4b3a.pth">model</a></td>
+<td align="center"><a href="https://github.com/Lornatang/YOLOv4-PyTorch/releases/download/v0.2/yolov5-medium-67dd4b3a.pth">model</a></td>
 </tr>
 <!-- ROW: YOLOv5-large -->
  <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5-large.yaml">YOLOv5-large</a></td>
@@ -262,19 +260,19 @@ The default settings are __not directly comparable__ with Detectron's standard s
 <td align="center">164</td>
 <td align="center">47.50M</td>
 <td align="center">116.4B</td>
-<td align="center"><a href="https://github.com/Lornatang/YOLOv4-PyTorch/releases/download/v0.1/yolov5-large-5519e248.pth">model</a></td>
+<td align="center"><a href="https://github.com/Lornatang/YOLOv4-PyTorch/releases/download/v0.2/yolov5-large-5519e248.pth">model</a></td>
 </tr>
 <!-- ROW: YOLOv5-xlarge -->
  <tr><td align="left"><a href="configs/PascalVOC-Detection/yolov5-xlarge.yaml">YOLOv5-xlarge</a></td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
-<td align="center">-</td>
+<td align="center">1.4</td>
+<td align="center">10.8</td>
+<td align="center">7.2</td>
+<td align="center">60.2</td>
+<td align="center">82.6</td>
+<td align="center">93</td>
+<td align="center">88.56M</td>
+<td align="center">220.6B</td>
+<td align="center"><a href="https://github.com/Lornatang/YOLOv4-PyTorch/releases/download/v0.2/yolov5-xlarge-678a48c9.pth">model</a></td>
 </tr>
 </tbody></table>
 
@@ -310,7 +308,7 @@ The default settings are __not directly comparable__ with Detectron's standard s
 <th valign="bottom">download</th>
 <!-- TABLE BODY -->
 <!-- ROW: MobileNet-v1 -->
- <tr><td align="left"><a href="configs/COCO-Detection/mobilenetv1.yaml">MobileNet-v1</a></td>
+ <tr><td align="left"><a href="configs/COCO-Detection/mobilenet-v1.yaml">MobileNet-v1</a></td>
 <td align="center">-</td>
 <td align="center">-</td>
 <td align="center">-</td>
