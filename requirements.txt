@@ -19,7 +19,7 @@ git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI
 pycocotools~=2.0.1
 pathlib~=1.0.1
 yaml~=0.2.5
-setuptools~=49.2.0
+setuptools
 
 
 # ------------------- Tensorboard ------------------------------
