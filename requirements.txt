@@ -1,24 +1,24 @@
 # --------------------- If use pip -----------------------------
 Cython
-numpy~=1.18.5
-opencv-python~=4.3.0.36
+numpy
+opencv-python
 torch
 torchvision
 onnx
 django
 djangorestframework
-matplotlib~=3.2.2
-PyYAML~=5.3.1
+matplotlib
+PyYAML
 scipy
-tqdm~=4.47.0
+tqdm
 tensorboard
-pillow~=7.2.0
+pillow
 thop
 scikit-image
 git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI
-pycocotools~=2.0.1
-pathlib~=1.0.1
-yaml~=0.2.5
+pycocotools
+pathlib
+yaml
 setuptools
 
 
